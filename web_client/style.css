@@ -1,0 +1,172 @@
+:root {
+	--accent: #00a9ce;
+	--ok: #2e9d4f;
+	--err: #c62828;
+	--muted: #777;
+	--changed: #fff3c4;
+}
+
+[hidden] {
+	display: none !important;
+}
+
+body {
+	font-family: system-ui, sans-serif;
+	margin: 0 auto;
+	max-width: 900px;
+	padding: 1rem;
+	color: #222;
+}
+
+h1 {
+	margin: 0 0 0.75rem;
+}
+
+.toolbar {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+button {
+	padding: 0.4rem 1rem;
+	border: 1px solid var(--accent);
+	border-radius: 4px;
+	background: var(--accent);
+	color: #fff;
+	cursor: pointer;
+	font-size: 0.95rem;
+}
+
+button:disabled {
+	background: #ccc;
+	border-color: #ccc;
+	cursor: not-allowed;
+}
+
+#disconnect-btn,
+#refresh-btn {
+	background: #fff;
+	color: var(--accent);
+}
+
+#refresh-btn:disabled {
+	border-color: #ccc;
+	color: #aaa;
+}
+
+.status {
+	color: var(--muted);
+}
+
+.status.connected {
+	color: var(--ok);
+	font-weight: 600;
+}
+
+.scan-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	color: var(--muted);
+	font-size: 0.9rem;
+}
+
+.scan-indicator .dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #bbb;
+}
+
+.scan-indicator.active .dot {
+	background: var(--ok);
+	animation: pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+	from { opacity: 1; transform: scale(1); }
+	to { opacity: 0.3; transform: scale(0.7); }
+}
+
+.error {
+	margin-top: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	border-radius: 4px;
+	background: #fdecea;
+	color: var(--err);
+}
+
+table {
+	width: 100%;
+	margin-top: 1rem;
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 0.4rem 0.6rem;
+	border-bottom: 1px solid #e3e3e3;
+	text-align: left;
+	vertical-align: middle;
+}
+
+th {
+	background: #f5f5f5;
+}
+
+td.value {
+	font-family: ui-monospace, monospace;
+	white-space: nowrap;
+	transition: background 0.8s;
+}
+
+td.value.changed {
+	background: var(--changed);
+	transition: none;
+}
+
+.name small {
+	display: block;
+	color: var(--muted);
+}
+
+.badge {
+	margin-left: 0.4rem;
+	padding: 0 0.35rem;
+	border-radius: 3px;
+	background: #eee;
+	color: var(--muted);
+	font-size: 0.75rem;
+}
+
+.badge.live {
+	background: #e3f4ea;
+	color: var(--ok);
+}
+
+input.value-input {
+	width: 9rem;
+	font-family: ui-monospace, monospace;
+	padding: 0.25rem 0.4rem;
+}
+
+input.value-input[readonly] {
+	background: #f3f3f3;
+	color: var(--muted);
+	border: 1px solid #ddd;
+}
+
+input.value-input.invalid {
+	border-color: var(--err);
+	outline-color: var(--err);
+}
+
+input.value-input.edited {
+	border-color: var(--accent);
+}
+
+.hint {
+	color: var(--muted);
+	font-size: 0.9rem;
+}

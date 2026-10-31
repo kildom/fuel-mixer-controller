@@ -1,0 +1,27 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Application GPIOs for nRF52840 DK (PCA10056).
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	zephyr,user {
+		/* Outputs. */
+		motor1-gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>;
+		motor2-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+		pump-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+		heater-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+
+		/* Inputs. */
+		loader-gpios = <&gpio1 7 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+		sensor-gpios = <&gpio1 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+
+		/* LED1..LED4 on P0.13..P0.16 (active low) mirror Motor 1, Motor 2, Pump, Heater. */
+		led-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>,
+			    <&gpio0 14 GPIO_ACTIVE_LOW>,
+			    <&gpio0 15 GPIO_ACTIVE_LOW>,
+			    <&gpio0 16 GPIO_ACTIVE_LOW>;
+	};
+};

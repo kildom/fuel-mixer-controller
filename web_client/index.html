@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>BLE Parameters</title>
+	<link rel="icon" href="data:,">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<header>
+		<h1 id="title">BLE Parameters</h1>
+		<div class="toolbar">
+			<button id="connect-btn" type="button">Connect</button>
+			<button id="disconnect-btn" type="button" hidden>Disconnect</button>
+			<button id="refresh-btn" type="button" hidden>Refresh</button>
+			<span id="status" class="status">Disconnected</span>
+			<span id="scan-indicator" class="scan-indicator" hidden>
+				<span class="dot"></span>
+				<span id="scan-text">Scanning…</span>
+			</span>
+		</div>
+		<div id="error" class="error" hidden></div>
+	</header>
+
+	<main>
+		<table id="params-table" hidden>
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Name</th>
+					<th>Device value</th>
+					<th>New value</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="params-body"></tbody>
+		</table>
+		<p id="hint" class="hint">
+			Click <b>Connect</b> and select a compatible device.
+			Values are signed 32-bit decimal integers.
+		</p>
+	</main>
+
+	<script src="app.js"></script>
+</body>
+</html>

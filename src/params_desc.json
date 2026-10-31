@@ -1,0 +1,51 @@
+{
+	"version": 1,
+	"device": "BLE Relays",
+	"parameters": [
+		{
+			"id": 0,
+			"name": "Next read index",
+			"description": "ID of the parameter returned by the next read",
+			"readOnly": false,
+			"persistent": false,
+			"hidden": true,
+			"live": false
+		},
+		{
+			"id": 1,
+			"name": "Outputs",
+			"description": "Bit 0 Motor 1, bit 1 Motor 2, bit 2 Pump, bit 3 Heater",
+			"readOnly": false,
+			"persistent": true,
+			"hidden": false,
+			"live": false
+		},
+		{
+			"id": 2,
+			"name": "Inputs",
+			"description": "Bit 0 Loader, bit 1 Sensor",
+			"readOnly": true,
+			"persistent": false,
+			"hidden": false,
+			"live": true
+		},
+		{
+			"id": 3,
+			"name": "User value",
+			"description": "Demo persistent value",
+			"readOnly": false,
+			"persistent": true,
+			"hidden": false,
+			"live": false
+		},
+		{
+			"id": 4,
+			"name": "Uptime [ms]",
+			"description": "Device uptime in milliseconds",
+			"readOnly": true,
+			"persistent": false,
+			"hidden": false,
+			"live": true
+		}
+	]
+}
