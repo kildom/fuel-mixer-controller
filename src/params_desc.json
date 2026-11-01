@@ -6,46 +6,67 @@
 			"id": 0,
 			"name": "Next read index",
 			"description": "ID of the parameter returned by the next read",
-			"readOnly": false,
-			"persistent": false,
-			"hidden": true,
-			"live": false
+			"hidden": true
 		},
 		{
 			"id": 1,
-			"name": "Outputs",
-			"description": "Bit 0 Motor 1, bit 1 Motor 2, bit 2 Pump, bit 3 Heater",
-			"readOnly": false,
-			"persistent": true,
-			"hidden": false,
-			"live": false
+			"name": "Minimalny czas pracy",
+			"description": "[min]",
+			"persistent": true
 		},
 		{
 			"id": 2,
-			"name": "Inputs",
-			"description": "Bit 0 Loader, bit 1 Sensor",
-			"readOnly": true,
-			"persistent": false,
-			"hidden": false,
-			"live": true
+			"name": "Proporcja rozpałki (czystego paliwa 1)",
+			"description": "[%]",
+			"persistent": true
 		},
 		{
 			"id": 3,
-			"name": "User value",
-			"description": "Demo persistent value",
-			"readOnly": false,
-			"persistent": true,
-			"hidden": false,
-			"live": false
+			"name": "Proporcja paliwa 1",
+			"description": "[%]",
+			"persistent": true
 		},
 		{
 			"id": 4,
-			"name": "Uptime [ms]",
-			"description": "Device uptime in milliseconds",
-			"readOnly": true,
-			"persistent": false,
-			"hidden": false,
-			"live": true
+			"name": "Proporcja paliwa 2",
+			"description": "[%]",
+			"persistent": true
+		},
+		{
+			"id": 5,
+			"name": "Czas rozpalania (czystym paliwem 1)",
+			"description": "[min]",
+			"persistent": true
+		},
+		{
+			"id": 6,
+			"name": "Czas wykrycia nasypu rozpałki",
+			"description": "[sekundy]",
+			"persistent": true
+		},
+		{
+			"id": 7,
+			"name": "Czas wykrycia wygaszenia",
+			"description": "[min]",
+			"persistent": true
+		},
+		{
+			"id": 8,
+			"name": "Maksymalny czas przedłużenia sygnału",
+			"description": "[sekundy]",
+			"persistent": true
+		},
+		{
+			"id": 9,
+			"name": "Czas pracy pompy",
+			"description": "[min] Zero, żeby pracowała cały czas",
+			"persistent": true
+		},
+		{
+			"id": 10,
+			"name": "Wymuszona praca",
+			"description": "[godziny] Zapisz, żeby wymusić ogrzewanie przez podany czas",
+			"persistent": false
 		}
 	]
 }

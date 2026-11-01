@@ -43,7 +43,7 @@ the browser. The host Bluetooth adapter must also be on (`rfkill unblock bluetoo
 ## Parameter description
 
 The client has no built-in knowledge of the parameters. Names, descriptions and the `readOnly`,
-`persistent`, `hidden` and `live` flags come from the device description characteristic (see the
+`persistent`, `hidden` and `live` flags (a missing flag means `false`) come from the device description characteristic (see the
 [application README](../README.md#description-characteristic)), defined in firmware in
 [../src/params_desc.json](../src/params_desc.json). The page title is taken from its `device`
 field.

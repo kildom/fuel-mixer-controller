@@ -92,7 +92,7 @@ int io_set_output(enum io_output output, bool on)
 		return -EINVAL;
 	}
 
-	err = gpio_pin_set_dt(&outputs[output].gpio, on);
+	err = gpio_pin_set_dt(&outputs[output].gpio, !on);
 	if (err) {
 		LOG_ERR("%s: set failed (%d)", outputs[output].name, err);
 		return err;
@@ -119,7 +119,7 @@ bool io_get_input(enum io_input input)
 		return false;
 	}
 
-	return gpio_pin_get_dt(&inputs[input].gpio) > 0;
+	return !(gpio_pin_get_dt(&inputs[input].gpio) > 0);
 }
 
 const char *io_output_name(enum io_output output)

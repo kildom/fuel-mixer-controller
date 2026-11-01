@@ -50,25 +50,19 @@ JSON format (minified on the device):
   "version": 1,
   "device": "BLE Relays",
   "parameters": [
-    { "id": 1, "name": "Outputs", "description": "...", "readOnly": false,
-      "persistent": true, "hidden": false, "live": false }
+    { "id": 0, "name": "Next read index", "hidden": true },
+    { "id": 1, "name": "Outputs", "description": "...", "persistent": true }
   ]
 }
 ```
 
-`parameters[i].id` must be `i`. `hidden` marks parameters a GUI should not show (parameter 0).
+`parameters[i].id` must be `i`; `name` is required. `description` is optional. Flags
+`readOnly`, `persistent`, `hidden` and `live` are optional booleans; a missing flag means `false`
+(omit false flags to save space). `hidden` marks parameters a GUI should not show (parameter 0).
 `live` marks parameters whose value changes on its own (for example inputs), so a GUI should
 poll them continuously; other parameters only change when written.
 
 ## Parameters
-
-| ID | Name          | Persistent | Description                                                     |
-| -- | ------------- | ---------- | --------------------------------------------------------------- |
-| 0  | Next read     | no         | ID of the next parameter to read; writes are wrapped into 0..count-1 |
-| 1  | Outputs       | yes        | Bit 0 Motor 1, bit 1 Motor 2, bit 2 Pump, bit 3 Heater           |
-| 2  | Inputs        | no         | Refreshed on read: bit 0 Loader, bit 1 Sensor                    |
-| 3  | User value    | yes        | Demo value, initial 1000                                        |
-| 4  | Uptime        | no         | Refreshed on read: uptime in ms (wraps to 0 after ~24.8 days)   |
 
 The table is defined in [src/app_params.c](src/app_params.c); IDs are in
 [src/app_params.h](src/app_params.h). Their description for clients is in

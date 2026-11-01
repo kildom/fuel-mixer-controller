@@ -26,23 +26,46 @@ struct parameter params_table[] = {
 		.persistent = false,
 		.write_callback = next_read_write_cb,
 	},
-	[PARAM_OUTPUTS] = {
-		.initial_value = 0,
+	[PARAM_MINIMALNY_CZAS_PRACY] = {
+		.initial_value = 2 * 60,
 		.persistent = true,
 	},
-	[PARAM_INPUTS] = {
-		.initial_value = 0,
-		.persistent = false,
-		.read_callback = logic_inputs_read_cb,
-	},
-	[PARAM_USER_VALUE] = {
-		.initial_value = 1000,
+	[PARAM_PROPORCJA_ROZPALKI] = {
+		.initial_value = 100,
 		.persistent = true,
 	},
-	[PARAM_UPTIME_MS] = {
+	[PARAM_PROPORCJA_PALIWA_1] = {
+		.initial_value = 30,
+		.persistent = true,
+	},
+	[PARAM_PROPORCJA_PALIWA_2] = {
+		.initial_value = 70,
+		.persistent = true,
+	},
+	[PARAM_CZAS_ROZPALANIA] = {
+		.initial_value = 15,
+		.persistent = true,
+	},
+	[PARAM_CZAS_WYKRYCIA_NASYPU_ROZPALKI] = {
+		.initial_value = 15,
+		.persistent = true,
+	},
+	[PARAM_CZAS_WYKRYCIA_WYGASZENIA] = {
+		.initial_value = 5,
+		.persistent = true,
+	},
+	[PARAM_MAKSYMALNY_CZAS_PRZEDLUZENIA_SYGNALU] = {
+		.initial_value = 5,
+		.persistent = true,
+	},
+	[PARAM_CZAS_PRACY_POMPY] = {
+		.initial_value = 45,
+		.persistent = true,
+	},
+	[PARAM_WYMUSZONA_PRACA] = {
 		.initial_value = 0,
 		.persistent = false,
-		.read_callback = logic_uptime_read_cb,
+		.write_callback = param_write_wymuszona_praca,
 	},
 };
 

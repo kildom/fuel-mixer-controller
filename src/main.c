@@ -17,6 +17,14 @@
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
+#define WORKER_STACK_SIZE 1024
+#define WORKER_PRIORITY   5
+
+static void worker_thread(void *p1, void *p2, void *p3);
+
+K_THREAD_DEFINE(worker_tid, WORKER_STACK_SIZE, worker_thread, NULL, NULL, NULL, WORKER_PRIORITY,
+		0, SYS_FOREVER_MS);
+
 #define DEVICE_NAME     CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
@@ -71,6 +79,23 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.disconnected = disconnected,
 	.recycled = recycled,
 };
+
+static void worker_thread(void *p1, void *p2, void *p3)
+{
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+
+	while (true) {
+		procesuj((int)TIME_FROM_MS(k_uptime_get()));
+		k_sleep(K_MSEC(TIME_TO_MS(1)));
+	}
+}
+
+void logic_start(void)
+{
+	k_thread_start(worker_tid);
+}
 
 int main(void)
 {

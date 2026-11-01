@@ -19,6 +19,8 @@ const DESC_CHAR_UUID = '8f5b0004-3c2a-4e1d-9b7e-2f4a6c8d1e01';
 
 const PARAM_NEXT_READ = 0;
 const MAX_PARAMS = 256;
+/* Boolean flags of a parameter description; a missing flag means false. */
+const DESC_FLAGS = ['readOnly', 'persistent', 'hidden', 'live'];
 const DESC_HEADER_SIZE = 4;
 const SCAN_DELAY_MS = 1000;
 const MIN_VALUE = -2147483648;
@@ -46,6 +48,7 @@ let descChar = null;
  * Parameter descriptions read from the device; index is the parameter ID.
  * Fields: name, description, readOnly, persistent, hidden (not shown and not scanned),
  * live (re-read on every scan; other parameters are read on connect, write and refresh).
+ * Missing flags are normalized to false.
  */
 let parameters = [];
 let connected = false;
@@ -151,10 +154,15 @@ async function readDescription() {
 	if (!Array.isArray(list) || list.length === 0 || list.length > MAX_PARAMS) {
 		throw new Error('Invalid description: "parameters" must be a non-empty array');
 	}
-	list.forEach((p, index) => {
+	desc.parameters = list.map((p, index) => {
 		if (!p || p.id !== index || typeof p.name !== 'string') {
 			throw new Error(`Invalid description of parameter at index ${index}`);
 		}
+		const flags = {};
+		for (const flag of DESC_FLAGS) {
+			flags[flag] = p[flag] === true;
+		}
+		return { ...p, description: p.description ?? '', ...flags };
 	});
 
 	return desc;
