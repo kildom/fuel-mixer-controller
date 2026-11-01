@@ -86,6 +86,8 @@ static void worker_thread(void *p1, void *p2, void *p3)
 	ARG_UNUSED(p2);
 	ARG_UNUSED(p3);
 
+	k_sleep(K_MSEC(1000));
+
 	while (true) {
 		procesuj((int)TIME_FROM_MS(k_uptime_get()));
 		k_sleep(K_MSEC(TIME_TO_MS(1)));

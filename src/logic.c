@@ -53,6 +53,26 @@ LOG_MODULE_REGISTER(logic, LOG_LEVEL_DBG);
 #define STAN_POMPA_WYLACZONA (1 << 8)
 #define STAN_POMPA (STAN_POMPA_PODAJNIK | STAN_POMPA_PRZEDLUZENIE | STAN_POMPA_WYLACZONA)
 
+#define STAN_PODAJNIK_OCZEKIWANIE (1 << 9)
+#define STAN_PODAJNIK_NASYP_ROZPALKI (1 << 10)
+#define STAN_PODAJNIK_ROZPALANIE_TRWA (1 << 11)
+#define STAN_PODAJNIK_PRACA_TRWA (1 << 12)
+#define STAN_PODAJNIK (STAN_PODAJNIK_OCZEKIWANIE | STAN_PODAJNIK_NASYP_ROZPALKI | STAN_PODAJNIK_ROZPALANIE_TRWA | STAN_PODAJNIK_PRACA_TRWA)
+
+#define STAN_DAWKOMIERZ_1_OCZEKIWANIE (1 << 13)
+#define STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CALOSCI (1 << 14)
+#define STAN_DAWKOMIERZ_1_POSZERZENIE_SYGNALU (1 << 15)
+#define STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CZESCI (1 << 16)
+#define STAN_DAWKOMIERZ_1_BLOKOWANIE_SYGNALU (1 << 17)
+#define STAN_DAWKOMIERZ_1 (STAN_DAWKOMIERZ_1_OCZEKIWANIE | STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CALOSCI | STAN_DAWKOMIERZ_1_POSZERZENIE_SYGNALU | STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CZESCI | STAN_DAWKOMIERZ_1_BLOKOWANIE_SYGNALU)
+
+#define STAN_DAWKOMIERZ_2_OCZEKIWANIE (1 << 18)
+#define STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CALOSCI (1 << 19)
+#define STAN_DAWKOMIERZ_2_POSZERZENIE_SYGNALU (1 << 20)
+#define STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CZESCI (1 << 21)
+#define STAN_DAWKOMIERZ_2_BLOKOWANIE_SYGNALU (1 << 22)
+#define STAN_DAWKOMIERZ_2 (STAN_DAWKOMIERZ_2_OCZEKIWANIE | STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CALOSCI | STAN_DAWKOMIERZ_2_POSZERZENIE_SYGNALU | STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CZESCI | STAN_DAWKOMIERZ_2_BLOKOWANIE_SYGNALU)
+
 
 static int podglad_stanu = 0;
 static int now = 0;
@@ -75,6 +95,14 @@ static bool input_podajnik;
 
 static void stan_grupy(int grupa, int stan_mask)
 {
+	podglad_stanu = (podglad_stanu & ~(grupa)) | (stan_mask);
+}
+
+
+static void stan_grupy_offset(int offset, int grupa, int stan_mask)
+{
+	grupa *= offset;
+	stan_mask *= offset;
 	podglad_stanu = (podglad_stanu & ~(grupa)) | (stan_mask);
 }
 
@@ -184,16 +212,18 @@ struct Dawkomierz {
 	int czas_startu;
 	int *procenty;
 	int io_motor;
+	int offset_grupy;
 };
 
 
-void dawkomierz_init(struct Dawkomierz *d, int *procenty, int io_motor, int poprzedni_okres)
+void dawkomierz_init(struct Dawkomierz *d, int *procenty, int io_motor, int poprzedni_okres, int offset_grupy)
 {
 	d->stan = NULL;
 	d->poprzedni_okres = poprzedni_okres;
 	d->czas_startu = -TIME_FROM_HOUR(24);
 	d->procenty = procenty;
 	d->io_motor = io_motor;
+	d->offset_grupy = offset_grupy;
 }
 
 /** @brief Procesuje maszynę stanów dla jednego dawkomierza
@@ -213,6 +243,7 @@ void dawkomierz_procesuj(struct Dawkomierz *d)
 
 oczekiwanie: // Oczekiwanie na sygnał wejściowy
 
+	stan_grupy_offset(d->offset_grupy, STAN_DAWKOMIERZ_1, STAN_DAWKOMIERZ_1_OCZEKIWANIE);
 	output(d->io_motor, input_podajnik);
 
 	// Jeżeli sygnał wejściowy jest aktywny, rozpoczynamy proces przekazywania sygnału do silnika
@@ -232,6 +263,7 @@ oczekiwanie: // Oczekiwanie na sygnał wejściowy
 
 przekazanie_w_calosci: // Przekazanie całego okresu do silnika
 
+	stan_grupy_offset(d->offset_grupy, STAN_DAWKOMIERZ_1, STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CALOSCI);
 	output(d->io_motor, true);
 
 	// Jeżeli sygnał wejściowy przestał być aktywny, zapisujemy czas trwania okresu i przechodzimy do poszerzenia sygnału.
@@ -245,6 +277,7 @@ przekazanie_w_calosci: // Przekazanie całego okresu do silnika
 
 poszerzenie_sygnalu: // Poszerzenie sygnału wyjściowego o określony procent
 
+	stan_grupy_offset(d->offset_grupy, STAN_DAWKOMIERZ_1, STAN_DAWKOMIERZ_1_POSZERZENIE_SYGNALU);
 	output(d->io_motor, true);
 
 	// Całkowity czas pracy silnika obliczony jest na podstawie okresu i zadanych procentów.
@@ -265,6 +298,7 @@ poszerzenie_sygnalu: // Poszerzenie sygnału wyjściowego o określony procent
 
 przekazanie_w_czesci: // Przekazanie początkowej części okresu sygnału do silnika
 
+	stan_grupy_offset(d->offset_grupy, STAN_DAWKOMIERZ_1, STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CZESCI);
 	output(d->io_motor, true);
 
 	// Jeżeli sygnał przestał być aktywny za wcześnie, zapisujemy czas trwania okresu i wracamy do oczekiwania.
@@ -286,6 +320,7 @@ przekazanie_w_czesci: // Przekazanie początkowej części okresu sygnału do si
 
 blokowanie_sygnalu: // Blokowanie sygnału wyjściowego do silnika po tym jak już część okresu została przekazana
 
+	stan_grupy_offset(d->offset_grupy, STAN_DAWKOMIERZ_1, STAN_DAWKOMIERZ_1_BLOKOWANIE_SYGNALU);
 	output(d->io_motor, false);
 
 	// Jeżeli sygnał wejściowy przestał być aktywny, zapisujemy czas trwania okresu i wracamy do oczekiwania.
@@ -366,6 +401,9 @@ static void procesuj_podajnik()
 
 oczekiwanie: // Oczekiwanie na rozpoczęcie pracy
 
+	stan_grupy(STAN_PODAJNIK, STAN_PODAJNIK_OCZEKIWANIE);
+	stan_grupy(STAN_DAWKOMIERZ_1, 0);
+	stan_grupy(STAN_DAWKOMIERZ_2, 0);
 	output(IO_MOTOR_1, false);
 	output(IO_MOTOR_2, false);
 
@@ -379,13 +417,16 @@ oczekiwanie: // Oczekiwanie na rozpoczęcie pracy
 
 nasyp_rozpalki: // Nasypywanie rozpałki do czasu wyłączenia podajnika
 
+	stan_grupy(STAN_PODAJNIK, STAN_PODAJNIK_NASYP_ROZPALKI);
+	stan_grupy(STAN_DAWKOMIERZ_1, 0);
+	stan_grupy(STAN_DAWKOMIERZ_2, 0);
 	output(IO_MOTOR_1, true);
 	output(IO_MOTOR_2, false);
 
 	if (!input_podajnik) {
 		LOG_INF("Rozpoczynam proces rozpalania");
 		czas_startu_rozpalania = now;
-		dawkomierz_init(&dawkomierz_1, &param_proporcja_rozpalki, IO_MOTOR_1, 0);
+		dawkomierz_init(&dawkomierz_1, &param_proporcja_rozpalki, IO_MOTOR_1, 0, 1);
 		goto rozpalanie_trwa;
 	}
 
@@ -394,6 +435,8 @@ nasyp_rozpalki: // Nasypywanie rozpałki do czasu wyłączenia podajnika
 
 rozpalanie_trwa: // Proces rozpalania trwa
 
+	stan_grupy(STAN_PODAJNIK, STAN_PODAJNIK_ROZPALANIE_TRWA);
+	stan_grupy(STAN_DAWKOMIERZ_2, 0);
 	output(IO_MOTOR_2, false);
 
 	dawkomierz_procesuj(&dawkomierz_1);
@@ -402,8 +445,8 @@ rozpalanie_trwa: // Proces rozpalania trwa
 		LOG_INF("Rozpoczynam normalną pracę");
 		output(IO_MOTOR_1, false);
 		int poprzedni_okres = dawkomierz_1.poprzedni_okres;
-		dawkomierz_init(&dawkomierz_1, &param_proporcja_paliwa_1, IO_MOTOR_1, poprzedni_okres);
-		dawkomierz_init(&dawkomierz_2, &param_proporcja_paliwa_2, IO_MOTOR_2, poprzedni_okres);
+		dawkomierz_init(&dawkomierz_1, &param_proporcja_paliwa_1, IO_MOTOR_1, poprzedni_okres, 1);
+		dawkomierz_init(&dawkomierz_2, &param_proporcja_paliwa_2, IO_MOTOR_2, poprzedni_okres, STAN_DAWKOMIERZ_2 / STAN_DAWKOMIERZ_1);
 		goto praca_trwa;
 	}
 
@@ -412,6 +455,7 @@ rozpalanie_trwa: // Proces rozpalania trwa
 
 praca_trwa: // Proces pracy trwa
 
+	stan_grupy(STAN_PODAJNIK, STAN_PODAJNIK_PRACA_TRWA);
 	dawkomierz_procesuj(&dawkomierz_1);
 	dawkomierz_procesuj(&dawkomierz_2);
 

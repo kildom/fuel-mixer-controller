@@ -83,7 +83,21 @@
 				"Nagrzewanie",
 				"[Pompa] Podajnik",
 				"Przedłużenie",
-				"Wyłączona"
+				"Wyłączona",
+				"[Podajnik] Oczekiwanie",
+				"Nasyp rozpałki",
+				"Rozpalanie trwa",
+				"Praca trwa",
+				"[Dawkomierz 1] Oczekiwanie",
+				"Przekazanie w całości",
+				"Poszerzenie sygnału",
+				"Przekazanie w części",
+				"Blokowanie sygnału",
+				"[Dawkomierz 2] Oczekiwanie",
+				"Przekazanie w całości",
+				"Poszerzenie sygnału",
+				"Przekazanie w części",
+				"Blokowanie sygnału"
 			]
 		}
 	]
