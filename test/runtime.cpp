@@ -215,6 +215,23 @@ void param(int parameter_id, int value)
 			value, current_time);
 }
 
+void force_work(int hours)
+{
+	constexpr int parameter_id = PARAM_WYMUSZONA_PRACA;
+	const int old_value = parameter_values[parameter_id];
+	struct parameter forced_work = {};
+
+	parameter_values[parameter_id] = hours;
+	write_parameter(IO_INPUT_COUNT + IO_OUTPUT_COUNT + parameter_id,
+			hours, current_time);
+
+	forced_work.value = hours;
+	param_write_wymuszona_praca(&forced_work, old_value);
+	parameter_values[parameter_id] = forced_work.value;
+	write_parameter(IO_INPUT_COUNT + IO_OUTPUT_COUNT + parameter_id,
+			forced_work.value, current_time);
+}
+
 void on(int input_id)
 {
 	if (input_id < 0 || input_id >= IO_INPUT_COUNT) {
