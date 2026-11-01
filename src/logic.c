@@ -40,7 +40,21 @@ LOG_MODULE_REGISTER(logic, LOG_LEVEL_DBG);
  */
 
 
+#define STAN_INPUT_SENSOR (1 << 0)
+#define STAN_INPUT_PODAJNIK (1 << 1)
 
+#define STAN_OUTPUT_PODAJNIK_1 (1 << 2)
+#define STAN_OUTPUT_PODAJNIK_2 (1 << 3)
+#define STAN_OUTPUT_POMPA (1 << 4)
+#define STAN_OUTPUT_NAGRZEWANIE (1 << 5)
+
+#define STAN_POMPA_PODAJNIK (1 << 6)
+#define STAN_POMPA_PRZEDLUZENIE (1 << 7)
+#define STAN_POMPA_WYLACZONA (1 << 8)
+#define STAN_POMPA (STAN_POMPA_PODAJNIK | STAN_POMPA_PRZEDLUZENIE | STAN_POMPA_WYLACZONA)
+
+
+static int podglad_stanu = 0;
 static int now = 0;
 static int param_minimalny_czas_pracy;
 static int param_proporcja_rozpalki;
@@ -59,6 +73,22 @@ static bool input_podajnik;
 #pragma region Start Procesowania
 
 
+static void stan_grupy(int grupa, int stan_mask)
+{
+	podglad_stanu = (podglad_stanu & ~(grupa)) | (stan_mask);
+}
+
+
+static void stan(int stan_mask, bool on)
+{
+	if (on) {
+		podglad_stanu |= stan_mask;
+	} else {
+		podglad_stanu &= ~stan_mask;
+	}
+}
+
+
 static void start_procesowania(int aktualny_czas)
 {
 	now = aktualny_czas;
@@ -73,6 +103,30 @@ static void start_procesowania(int aktualny_czas)
 	param_czas_pracy_pompy = TIME_FROM_MIN(params_get(PARAM_CZAS_PRACY_POMPY));
 	input_sensor = io_get_input(IO_SENSOR);
 	input_podajnik = io_get_input(IO_LOADER);
+	stan(STAN_INPUT_SENSOR, input_sensor);
+	stan(STAN_INPUT_PODAJNIK, input_podajnik);
+}
+
+
+static void output(enum io_output id, bool on)
+{
+	io_set_output(id, on);
+	switch (id) {
+		case IO_MOTOR_1:
+			stan(STAN_OUTPUT_PODAJNIK_1, on);
+			break;
+		case IO_MOTOR_2:
+			stan(STAN_OUTPUT_PODAJNIK_2, on);
+			break;
+		case IO_PUMP:
+			stan(STAN_OUTPUT_POMPA, on);
+			break;
+		case IO_HEATER:
+			stan(STAN_OUTPUT_NAGRZEWANIE, on);
+			break;
+		default:
+			break;
+	}
 }
 
 
@@ -101,12 +155,13 @@ static void procesuj_sensor(bool wymuszenie_startu)
 		LOG_INF("Wyjście sensora %s", val ? "aktywne" : "nieaktywne");
 	}
 	sensor_aktywny = val;
-	io_set_output(IO_HEATER, sensor_aktywny);
+	output(IO_HEATER, sensor_aktywny);
 }
 
 
 void param_write_wymuszona_praca(struct parameter *param, int32_t old_value)
 {
+	(void)(old_value);
 	int x = now - param_minimalny_czas_pracy + TIME_FROM_HOUR(param->value);
 	param->value = 0;
 	int key = irq_lock();
@@ -158,7 +213,7 @@ void dawkomierz_procesuj(struct Dawkomierz *d)
 
 oczekiwanie: // Oczekiwanie na sygnał wejściowy
 
-	io_set_output(d->io_motor, input_podajnik);
+	output(d->io_motor, input_podajnik);
 
 	// Jeżeli sygnał wejściowy jest aktywny, rozpoczynamy proces przekazywania sygnału do silnika
 	// w całości lub części w zależności od procentu (częściowe przekazanie jest możliwe tylko jeśli
@@ -177,7 +232,7 @@ oczekiwanie: // Oczekiwanie na sygnał wejściowy
 
 przekazanie_w_calosci: // Przekazanie całego okresu do silnika
 
-	io_set_output(d->io_motor, true);
+	output(d->io_motor, true);
 
 	// Jeżeli sygnał wejściowy przestał być aktywny, zapisujemy czas trwania okresu i przechodzimy do poszerzenia sygnału.
 	if (!input_podajnik) {
@@ -190,7 +245,7 @@ przekazanie_w_calosci: // Przekazanie całego okresu do silnika
 
 poszerzenie_sygnalu: // Poszerzenie sygnału wyjściowego o określony procent
 
-	io_set_output(d->io_motor, true);
+	output(d->io_motor, true);
 
 	// Całkowity czas pracy silnika obliczony jest na podstawie okresu i zadanych procentów.
 	calkowity_czas = (d->poprzedni_okres * procent + 50) / 100;
@@ -210,7 +265,7 @@ poszerzenie_sygnalu: // Poszerzenie sygnału wyjściowego o określony procent
 
 przekazanie_w_czesci: // Przekazanie początkowej części okresu sygnału do silnika
 
-	io_set_output(d->io_motor, true);
+	output(d->io_motor, true);
 
 	// Jeżeli sygnał przestał być aktywny za wcześnie, zapisujemy czas trwania okresu i wracamy do oczekiwania.
 	if (!input_podajnik) {
@@ -231,7 +286,7 @@ przekazanie_w_czesci: // Przekazanie początkowej części okresu sygnału do si
 
 blokowanie_sygnalu: // Blokowanie sygnału wyjściowego do silnika po tym jak już część okresu została przekazana
 
-	io_set_output(d->io_motor, false);
+	output(d->io_motor, false);
 
 	// Jeżeli sygnał wejściowy przestał być aktywny, zapisujemy czas trwania okresu i wracamy do oczekiwania.
 	if (!input_podajnik) {
@@ -311,8 +366,8 @@ static void procesuj_podajnik()
 
 oczekiwanie: // Oczekiwanie na rozpoczęcie pracy
 
-	io_set_output(IO_MOTOR_1, false);
-	io_set_output(IO_MOTOR_2, false);
+	output(IO_MOTOR_1, false);
+	output(IO_MOTOR_2, false);
 
 	if (input_podajnik) {
 		procesuj_sensor(true);
@@ -324,8 +379,8 @@ oczekiwanie: // Oczekiwanie na rozpoczęcie pracy
 
 nasyp_rozpalki: // Nasypywanie rozpałki do czasu wyłączenia podajnika
 
-	io_set_output(IO_MOTOR_1, true);
-	io_set_output(IO_MOTOR_2, false);
+	output(IO_MOTOR_1, true);
+	output(IO_MOTOR_2, false);
 
 	if (!input_podajnik) {
 		LOG_INF("Rozpoczynam proces rozpalania");
@@ -339,13 +394,13 @@ nasyp_rozpalki: // Nasypywanie rozpałki do czasu wyłączenia podajnika
 
 rozpalanie_trwa: // Proces rozpalania trwa
 
-	io_set_output(IO_MOTOR_2, false);
+	output(IO_MOTOR_2, false);
 
 	dawkomierz_procesuj(&dawkomierz_1);
 
 	if (!input_podajnik && TIME_SINCE(czas_startu_rozpalania) > param_czas_rozpalania) {
 		LOG_INF("Rozpoczynam normalną pracę");
-		io_set_output(IO_MOTOR_1, false);
+		output(IO_MOTOR_1, false);
 		int poprzedni_okres = dawkomierz_1.poprzedni_okres;
 		dawkomierz_init(&dawkomierz_1, &param_proporcja_paliwa_1, IO_MOTOR_1, poprzedni_okres);
 		dawkomierz_init(&dawkomierz_2, &param_proporcja_paliwa_2, IO_MOTOR_2, poprzedni_okres);
@@ -384,11 +439,14 @@ static void procesuj_pompe()
 
 	if (input_podajnik) {
 		ostatni_czas_aktywnosci = now;
-		io_set_output(IO_PUMP, true);
+		output(IO_PUMP, true);
+		stan_grupy(STAN_POMPA, STAN_POMPA_PODAJNIK);
 	} else if (param_czas_pracy_pompy == 0 || TIME_SINCE(ostatni_czas_aktywnosci) < param_czas_pracy_pompy) {
-		io_set_output(IO_PUMP, true);
+		output(IO_PUMP, true);
+		stan_grupy(STAN_POMPA, STAN_POMPA_PRZEDLUZENIE);
 	} else {
-		io_set_output(IO_PUMP, false);
+		output(IO_PUMP, false);
+		stan_grupy(STAN_POMPA, STAN_POMPA_WYLACZONA);
 	}
 }
 
@@ -404,14 +462,15 @@ void procesuj(int aktualny_czas)
 	if (start) {
 		LOG_INF("Rozpoczęto pracę sterownika");
 		start = false;
-		io_set_output(IO_MOTOR_1, false);
-		io_set_output(IO_MOTOR_2, false);
-		io_set_output(IO_PUMP, false);
-		io_set_output(IO_HEATER, false);
+		output(IO_MOTOR_1, false);
+		output(IO_MOTOR_2, false);
+		output(IO_PUMP, false);
+		output(IO_HEATER, false);
 	}
 
 	start_procesowania(aktualny_czas);
 	procesuj_sensor(false);
 	procesuj_podajnik();
 	procesuj_pompe();
+	params_set(PARAM_PODGLAD_STANU, podglad_stanu);
 }

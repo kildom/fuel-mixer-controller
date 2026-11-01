@@ -67,6 +67,24 @@
 			"name": "Wymuszona praca",
 			"description": "[godziny] Zapisz, żeby wymusić ogrzewanie przez podany czas",
 			"persistent": false
+		},
+		{
+			"id": 11,
+			"name": "Podgląd stanu",
+			"description": "Stan podglądu urządzenia",
+			"readOnly": true,
+			"live": true,
+			"flags": [
+				"[Input] Sensor",
+				"Podajnik",
+				"[Output] Podajnik 1",
+				"Podajnik 2",
+				"Pompa",
+				"Nagrzewanie",
+				"[Pompa] Podajnik",
+				"Przedłużenie",
+				"Wyłączona"
+			]
 		}
 	]
 }

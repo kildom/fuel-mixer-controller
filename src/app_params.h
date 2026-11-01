@@ -30,6 +30,8 @@ enum app_param_id {
 	PARAM_CZAS_PRACY_POMPY = 9,
 	/* Wymuszona praca */
 	PARAM_WYMUSZONA_PRACA = 10,
+	/* Podgląd stanu */
+	PARAM_PODGLAD_STANU = 11,
 
 	PARAM_COUNT
 };

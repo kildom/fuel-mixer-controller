@@ -111,7 +111,8 @@ void initialize_vcd(const char *filename)
 		"czas_wykrycia_wygaszenia",
 		"maksymalny_czas_przedluzenia_sygnalu",
 		"czas_pracy_pompy",
-		"wymuszona_praca"
+		"wymuszona_praca",
+		"podglad_stanu"
 	};
 	for (int i = 0; i < PARAM_COUNT; ++i, ++index) {
 		signals[index] = {parameter_names[i], signal_id(index), 32};

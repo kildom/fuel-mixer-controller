@@ -67,6 +67,10 @@ struct parameter params_table[] = {
 		.persistent = false,
 		.write_callback = param_write_wymuszona_praca,
 	},
+	[PARAM_PODGLAD_STANU] = {
+		.initial_value = 0,
+		.persistent = false,
+	},
 };
 
 BUILD_ASSERT(ARRAY_SIZE(params_table) == PARAM_COUNT);

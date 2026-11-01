@@ -39,6 +39,10 @@ the browser. The host Bluetooth adapter must also be on (`rfkill unblock bluetoo
   and the parameter is read back immediately afterwards. An interrupted scan then continues.
 - Read-only parameters show read-only fields and a disabled **Write** button. Badges mark
   read-only, persistent and live parameters.
+- Parameters with a `flags` array show the flag names in a row beneath the parameter. Flag
+  position corresponds to its bit in the parameter value; active flags are blue and inactive
+  flags are gray. A label starting with `[Group name]` starts a new line and displays that
+  group name; the rest of the label, if present, is the flag name.
 
 ## Parameter description
 
@@ -46,7 +50,10 @@ The client has no built-in knowledge of the parameters. Names, descriptions and 
 `persistent`, `hidden` and `live` flags (a missing flag means `false`) come from the device description characteristic (see the
 [application README](../README.md#description-characteristic)), defined in firmware in
 [../src/params_desc.json](../src/params_desc.json). The page title is taken from its `device`
-field.
+field. A parameter's optional `flags` array maps each label to the corresponding bit in its
+32-bit value, starting with bit 0. A label can start with `[Group name]` to begin a group;
+the text after `]` is displayed as that flag's name, and following flags remain in the group
+until another group label starts.
 
 Parameters marked `hidden` are not shown or scanned. Parameter 0 (next read index) is hidden,
 because the client uses it internally to select which parameter is read.

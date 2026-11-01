@@ -158,11 +158,16 @@ async function readDescription() {
 		if (!p || p.id !== index || typeof p.name !== 'string') {
 			throw new Error(`Invalid description of parameter at index ${index}`);
 		}
+		if (p.flags !== undefined &&
+		    (!Array.isArray(p.flags) || p.flags.length > 32 ||
+		     p.flags.some((flag) => typeof flag !== 'string'))) {
+			throw new Error(`Invalid flags of parameter at index ${index}`);
+		}
 		const flags = {};
 		for (const flag of DESC_FLAGS) {
 			flags[flag] = p[flag] === true;
 		}
-		return { ...p, description: p.description ?? '', ...flags };
+		return { ...p, description: p.description ?? '', flags: p.flags ?? [], ...flags };
 	});
 
 	return desc;
@@ -228,7 +233,46 @@ function buildTable() {
 		tr.append(idCell, nameCell, valueCell, inputCell, btnCell);
 		ui.body.append(tr);
 
-		const row = { id, info, valueCell, input, writeBtn, value: null, edited: false };
+		const flagElements = [];
+		if (info.flags.length > 0) {
+			const flagsTr = document.createElement('tr');
+			flagsTr.className = 'flags-row';
+			const flagsCell = document.createElement('td');
+			flagsCell.colSpan = 5;
+			let flagLine = null;
+
+			for (let bit = 0; bit < info.flags.length; bit++) {
+				const sourceLabel = info.flags[bit];
+				const groupMatch = sourceLabel.match(/^\[([^\]]+)\]\s*(.*)$/);
+				let label = sourceLabel;
+
+				if (groupMatch) {
+					flagLine = document.createElement('div');
+					flagLine.className = 'flag-line';
+					const groupName = document.createElement('span');
+					groupName.className = 'flag-group-name';
+					groupName.textContent = groupMatch[1];
+					flagLine.append(groupName);
+					flagsCell.append(flagLine);
+					label = groupMatch[2] || groupMatch[1];
+				} else if (!flagLine) {
+					flagLine = document.createElement('div');
+					flagLine.className = 'flag-line';
+					flagsCell.append(flagLine);
+				}
+
+				const flag = document.createElement('span');
+				flag.className = 'flag inactive';
+				flag.textContent = label;
+				flagElements.push(flag);
+				flagLine.append(flag);
+			}
+
+			flagsTr.append(flagsCell);
+			ui.body.append(flagsTr);
+		}
+
+		const row = { id, info, valueCell, input, writeBtn, flagElements, value: null, edited: false };
 		rows.set(id, row);
 
 		if (!info.readOnly) {
@@ -264,6 +308,14 @@ function updateRow(id, value) {
 	const row = rows.get(id);
 	if (!row) {
 		return;
+	}
+
+	for (let bit = 0; bit < row.flagElements.length; bit++) {
+		const active = ((value >>> bit) & 1) !== 0;
+		const flag = row.flagElements[bit];
+		flag.classList.toggle('active', active);
+		flag.classList.toggle('inactive', !active);
+		flag.setAttribute('aria-label', `${row.info.flags[bit]}: ${active ? 'active' : 'inactive'}`);
 	}
 
 	if (row.value !== value) {
