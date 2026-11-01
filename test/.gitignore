@@ -1,0 +1,3 @@
+/build/
+/results/*.vcd
+/results/*.gtkw
