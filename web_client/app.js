@@ -3,9 +3,11 @@
 /*
  * BLE Relays web client (Web Bluetooth).
  *
- * Protocol: the write and read characteristics use a 5-byte packet
- * [ID][int32 little-endian value]. Each read of the read characteristic returns the parameter
- * selected by parameter 0 and advances parameter 0 to the next ID (wrapping around).
+ * Protocol: the write characteristic uses a 9-byte packet
+ * [ID][int32 little-endian value][uint32 little-endian validation value 0x113cfdf9].
+ * The read characteristic returns a 5-byte packet [ID][int32 little-endian value]. Each read
+ * returns the parameter selected by parameter 0 and advances parameter 0 to the next ID
+ * (wrapping around).
  *
  * The description characteristic provides a JSON description of all parameters in fragments:
  * write [uint16 LE offset] to select the start, then each read returns
@@ -99,9 +101,10 @@ function interruptibleSleep(ms) {
 /* ---------- GATT protocol ---------- */
 
 async function gattWrite(id, value) {
-	const packet = new DataView(new ArrayBuffer(5));
+	const packet = new DataView(new ArrayBuffer(9));
 	packet.setUint8(0, id);
 	packet.setInt32(1, value, true);
+	packet.setUint32(5, 0x113cfdf9, true);
 	await writeChar.writeValueWithResponse(packet.buffer);
 }
 

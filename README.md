@@ -23,13 +23,18 @@ Advertised name: `BLE_Relays`.
 | Parameter read       | `8f5b0003-3c2a-4e1d-9b7e-2f4a6c8d1e01` | Read                    |
 | Description (JSON)   | `8f5b0004-3c2a-4e1d-9b7e-2f4a6c8d1e01` | Read, Write             |
 
-Parameter write and read characteristics use a 5-byte packet: `[ID (1 byte)][value (int32, signed, little-endian)]`.
+The parameter read characteristic returns a 5-byte packet: `[ID (1 byte)][value (int32, signed, little-endian)]`.
+The write characteristic accepts a 9-byte packet with the same first 5 bytes, followed by
+`[validation value (uint32, little-endian)]`. The validation value must be `0x113cfdf9`;
+writes with another length or validation value are rejected. This guards against accidental
+writes from incompatible clients, but is not cryptographic authentication.
 
 Each read returns the parameter whose ID is stored in parameter 0, then advances parameter 0 to
 the next ID (wrapping to 0 after the last one). Write parameter 0 to select which parameter is
 read next.
 
-Write errors: wrong length -> `Invalid Attribute Value Length`, unknown ID -> `Value Not Allowed`.
+Write errors: wrong length -> `Invalid Attribute Value Length`, invalid validation value or
+unknown ID -> `Value Not Allowed`.
 
 ### Description characteristic
 

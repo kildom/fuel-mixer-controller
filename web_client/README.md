@@ -37,6 +37,8 @@ the browser. The host Bluetooth adapter must also be on (`rfkill unblock bluetoo
   An edited field is not overwritten by scanning until it is written or reverted.
 - A write is sent right away, even in the middle of a scan or during the pause between scans,
   and the parameter is read back immediately afterwards. An interrupted scan then continues.
+- Writes include the required `0x113cfdf9` validation value. This helps reject accidental writes
+  from incompatible clients; it is not cryptographic authentication.
 - Read-only parameters show read-only fields and a disabled **Write** button. Badges mark
   read-only, persistent and live parameters.
 - Parameters with a `flags` array show the flag names in a row beneath the parameter. Flag

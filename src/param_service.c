@@ -3,8 +3,10 @@
  *
  * Custom GATT service for reading and writing the parameter table.
  *
- * Both characteristics use a 5-byte packet: [ID][value as int32 little-endian].
- * - Write characteristic: sets parameter ID to the value.
+ * The read characteristic returns a 5-byte packet: [ID][value as int32 little-endian].
+ * The write characteristic accepts a 9-byte packet: [ID][value as int32 little-endian]
+ * [validation value 0x113cfdf9 as uint32 little-endian].
+ * - Write characteristic: sets parameter ID to the value if the validation value matches.
  * - Read characteristic: returns the parameter selected by parameter 0 and advances
  *   parameter 0 to the next ID (wrapping around after the last one).
  *
@@ -40,6 +42,8 @@ static const uint8_t params_desc[] = {
 
 #define DESC_HEADER_SIZE 4
 #define DESC_CHUNK_SIZE  200
+#define PARAM_WRITE_PACKET_SIZE 9
+#define PARAM_WRITE_VALIDATION  0x113cfdf9U
 
 static uint16_t desc_offset;
 static uint8_t desc_packet[DESC_HEADER_SIZE + DESC_CHUNK_SIZE];
@@ -77,9 +81,14 @@ static ssize_t param_write(struct bt_conn *conn, const struct bt_gatt_attr *attr
 		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
 	}
 
-	if (len != PARAM_PACKET_SIZE) {
+	if (len != PARAM_WRITE_PACKET_SIZE) {
 		LOG_WRN("Invalid write length %u", len);
 		return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+	}
+
+	if (sys_get_le32(&data[PARAM_PACKET_SIZE]) != PARAM_WRITE_VALIDATION) {
+		LOG_WRN("Invalid write validation value");
+		return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
 	}
 
 	if (params_write(data[0], (int32_t)sys_get_le32(&data[1]))) {
