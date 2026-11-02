@@ -5,7 +5,7 @@
  *
  * Available resources:
  *  - GPIO (io.h): io_set_output(IO_MOTOR_1/IO_MOTOR_2/IO_PUMP/IO_HEATER, on),
- *    io_get_input(IO_LOADER/IO_SENSOR), io_get_output().
+ *    io_get_input(IO_LOADER/IO_SENSOR/IO_BUTTON), io_get_output().
  *  - Parameters (parameters.h, app_params.h): params_get()/params_set() by PARAM_* ID.
  */
 
@@ -42,35 +42,36 @@ LOG_MODULE_REGISTER(logic, LOG_LEVEL_DBG);
 
 #define STAN_INPUT_SENSOR (1 << 0)
 #define STAN_INPUT_PODAJNIK (1 << 1)
+#define STAN_INPUT_BUTTON (1 << 2)
 
-#define STAN_OUTPUT_PODAJNIK_1 (1 << 2)
-#define STAN_OUTPUT_PODAJNIK_2 (1 << 3)
-#define STAN_OUTPUT_POMPA (1 << 4)
-#define STAN_OUTPUT_NAGRZEWANIE (1 << 5)
+#define STAN_OUTPUT_PODAJNIK_1 (1 << 3)
+#define STAN_OUTPUT_PODAJNIK_2 (1 << 4)
+#define STAN_OUTPUT_POMPA (1 << 5)
+#define STAN_OUTPUT_NAGRZEWANIE (1 << 6)
 
-#define STAN_POMPA_PODAJNIK (1 << 6)
-#define STAN_POMPA_PRZEDLUZENIE (1 << 7)
-#define STAN_POMPA_WYLACZONA (1 << 8)
+#define STAN_POMPA_PODAJNIK (1 << 7)
+#define STAN_POMPA_PRZEDLUZENIE (1 << 8)
+#define STAN_POMPA_WYLACZONA (1 << 9)
 #define STAN_POMPA (STAN_POMPA_PODAJNIK | STAN_POMPA_PRZEDLUZENIE | STAN_POMPA_WYLACZONA)
 
-#define STAN_PODAJNIK_OCZEKIWANIE (1 << 9)
-#define STAN_PODAJNIK_NASYP_ROZPALKI (1 << 10)
-#define STAN_PODAJNIK_ROZPALANIE_TRWA (1 << 11)
-#define STAN_PODAJNIK_PRACA_TRWA (1 << 12)
+#define STAN_PODAJNIK_OCZEKIWANIE (1 << 10)
+#define STAN_PODAJNIK_NASYP_ROZPALKI (1 << 11)
+#define STAN_PODAJNIK_ROZPALANIE_TRWA (1 << 12)
+#define STAN_PODAJNIK_PRACA_TRWA (1 << 13)
 #define STAN_PODAJNIK (STAN_PODAJNIK_OCZEKIWANIE | STAN_PODAJNIK_NASYP_ROZPALKI | STAN_PODAJNIK_ROZPALANIE_TRWA | STAN_PODAJNIK_PRACA_TRWA)
 
-#define STAN_DAWKOMIERZ_1_OCZEKIWANIE (1 << 13)
-#define STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CALOSCI (1 << 14)
-#define STAN_DAWKOMIERZ_1_POSZERZENIE_SYGNALU (1 << 15)
-#define STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CZESCI (1 << 16)
-#define STAN_DAWKOMIERZ_1_BLOKOWANIE_SYGNALU (1 << 17)
+#define STAN_DAWKOMIERZ_1_OCZEKIWANIE (1 << 14)
+#define STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CALOSCI (1 << 15)
+#define STAN_DAWKOMIERZ_1_POSZERZENIE_SYGNALU (1 << 16)
+#define STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CZESCI (1 << 17)
+#define STAN_DAWKOMIERZ_1_BLOKOWANIE_SYGNALU (1 << 18)
 #define STAN_DAWKOMIERZ_1 (STAN_DAWKOMIERZ_1_OCZEKIWANIE | STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CALOSCI | STAN_DAWKOMIERZ_1_POSZERZENIE_SYGNALU | STAN_DAWKOMIERZ_1_PRZEKAZANIE_W_CZESCI | STAN_DAWKOMIERZ_1_BLOKOWANIE_SYGNALU)
 
-#define STAN_DAWKOMIERZ_2_OCZEKIWANIE (1 << 18)
-#define STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CALOSCI (1 << 19)
-#define STAN_DAWKOMIERZ_2_POSZERZENIE_SYGNALU (1 << 20)
-#define STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CZESCI (1 << 21)
-#define STAN_DAWKOMIERZ_2_BLOKOWANIE_SYGNALU (1 << 22)
+#define STAN_DAWKOMIERZ_2_OCZEKIWANIE (1 << 19)
+#define STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CALOSCI (1 << 20)
+#define STAN_DAWKOMIERZ_2_POSZERZENIE_SYGNALU (1 << 21)
+#define STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CZESCI (1 << 22)
+#define STAN_DAWKOMIERZ_2_BLOKOWANIE_SYGNALU (1 << 23)
 #define STAN_DAWKOMIERZ_2 (STAN_DAWKOMIERZ_2_OCZEKIWANIE | STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CALOSCI | STAN_DAWKOMIERZ_2_POSZERZENIE_SYGNALU | STAN_DAWKOMIERZ_2_PRZEKAZANIE_W_CZESCI | STAN_DAWKOMIERZ_2_BLOKOWANIE_SYGNALU)
 
 
@@ -87,7 +88,11 @@ static int param_maksymalny_czas_przedluzenia_sygnalu;
 static int param_czas_pracy_pompy;
 static bool input_sensor;
 static bool input_podajnik;
-
+static bool input_button;
+static bool output_podajnik_1;
+static bool output_podajnik_2;
+static bool output_pompa;
+static bool output_nagrzewanie;
 
 //--------------------------------------------------------------
 #pragma region Start Procesowania
@@ -131,25 +136,30 @@ static void start_procesowania(int aktualny_czas)
 	param_czas_pracy_pompy = TIME_FROM_MIN(params_get(PARAM_CZAS_PRACY_POMPY));
 	input_sensor = io_get_input(IO_SENSOR);
 	input_podajnik = io_get_input(IO_LOADER);
+	input_button = io_get_input(IO_BUTTON);
 	stan(STAN_INPUT_SENSOR, input_sensor);
 	stan(STAN_INPUT_PODAJNIK, input_podajnik);
+	stan(STAN_INPUT_BUTTON, input_button);
 }
 
 
 static void output(enum io_output id, bool on)
 {
-	io_set_output(id, on);
 	switch (id) {
 		case IO_MOTOR_1:
+			output_podajnik_1 = on;
 			stan(STAN_OUTPUT_PODAJNIK_1, on);
 			break;
 		case IO_MOTOR_2:
+			output_podajnik_2 = on;
 			stan(STAN_OUTPUT_PODAJNIK_2, on);
 			break;
 		case IO_PUMP:
+			output_pompa = on;
 			stan(STAN_OUTPUT_POMPA, on);
 			break;
 		case IO_HEATER:
+			output_nagrzewanie = on;
 			stan(STAN_OUTPUT_NAGRZEWANIE, on);
 			break;
 		default:
@@ -499,6 +509,49 @@ static void procesuj_pompe()
 //--------------------------------------------------------------
 
 
+//--------------------------------------------------------------
+#pragma region Przycisk
+
+
+/** @brief Procesuje pracę przycisku.
+ *
+ * Przyciskiem można wymusić działanie podajnika 1 lub 2 (na przemian).
+ */
+static void procesuj_przycisk()
+{
+	static bool stan_poprzedni = false;
+	static int numer_podajnika = 1;
+
+	if (!stan_poprzedni && input_button) {
+		if (numer_podajnika == 1) {
+			numer_podajnika = 2;
+		} else {
+			numer_podajnika = 1;
+		}
+	} else if (stan_poprzedni && !input_button) {
+		if (numer_podajnika == 1) {
+			output(IO_MOTOR_1, false);
+		} else {
+			output(IO_MOTOR_2, false);
+		}
+	}
+
+	if (input_button) {
+		if (numer_podajnika == 1) {
+			output(IO_MOTOR_1, true);
+		} else {
+			output(IO_MOTOR_2, true);
+		}
+	}
+
+	stan_poprzedni = input_button;
+}
+
+
+#pragma endregion
+//--------------------------------------------------------------
+
+
 void procesuj(int aktualny_czas)
 {
 	static bool start = true;
@@ -516,5 +569,10 @@ void procesuj(int aktualny_czas)
 	procesuj_sensor(false);
 	procesuj_podajnik();
 	procesuj_pompe();
+	procesuj_przycisk();
+	io_set_output(IO_MOTOR_1, output_podajnik_1);
+	io_set_output(IO_MOTOR_2, output_podajnik_2);
+	io_set_output(IO_PUMP, output_pompa);
+	io_set_output(IO_HEATER, output_nagrzewanie);
 	params_set(PARAM_PODGLAD_STANU, podglad_stanu);
 }

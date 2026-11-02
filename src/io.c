@@ -28,6 +28,7 @@ static const struct io_pin outputs[] = {
 static const struct io_pin inputs[] = {
 	[IO_LOADER] = IO_PIN("Loader", loader_gpios),
 	[IO_SENSOR] = IO_PIN("Sensor", sensor_gpios),
+	[IO_BUTTON] = IO_PIN("Button", button_gpios),
 };
 
 /* leds[i] mirrors outputs[i]. */

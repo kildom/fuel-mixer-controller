@@ -21,6 +21,7 @@ enum io_output {
 enum io_input {
 	IO_LOADER, /* P1.07 */
 	IO_SENSOR, /* P1.08 */
+	IO_BUTTON, /* P0.11 */
 
 	IO_INPUT_COUNT
 };

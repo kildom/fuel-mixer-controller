@@ -100,6 +100,7 @@ the GPIO table below). GPIO assignment is in
 | Heater  | output    | P1.04 | LED4 (P0.16)  |
 | Loader  | input, pull-up | P1.07 | -        |
 | Sensor  | input, pull-up | P1.08 | -        |
+| Button  | input, pull-up | P0.11 | -        |
 
 ## Web client
 

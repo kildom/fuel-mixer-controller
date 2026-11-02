@@ -88,7 +88,7 @@ void initialize_vcd(const char *filename)
 	}
 
 	std::size_t index = 0;
-	const std::array<const char *, IO_INPUT_COUNT> input_names = {"loader", "sensor"};
+	const std::array<const char *, IO_INPUT_COUNT> input_names = {"loader", "sensor", "button"};
 	for (int i = 0; i < IO_INPUT_COUNT; ++i, ++index) {
 		signals[index] = {input_names[i], signal_id(index), 1};
 	}

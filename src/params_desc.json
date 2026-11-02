@@ -77,6 +77,7 @@
 			"flags": [
 				"[Input] Sensor",
 				"Podajnik",
+				"Przycisk",
 				"[Output] Podajnik 1",
 				"Podajnik 2",
 				"Pompa",
