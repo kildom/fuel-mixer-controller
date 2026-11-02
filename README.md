@@ -1,3 +1,14 @@
+> [!WARNING]
+> **AI-GENERATED PROJECT — USE AT YOUR OWN RISK**
+>
+> This project was created primarily with the assistance of Artificial Intelligence (AI), with limited human involvement in reviewing, validating, and testing the generated code.
+>
+> The code may contain bugs, security vulnerabilities, incorrect assumptions, or other issues. It has not necessarily undergone sufficient review or testing to be considered production-ready.
+>
+> **You are solely responsible for reviewing, testing, validating, and securing this project before using it, especially in production or other critical environments.**
+>
+> Use of this project in production is entirely at your own risk. The maintainers make no guarantees regarding its correctness, reliability, security, or suitability for any particular purpose.
+
 # Fuel Mixer
 
 BLE peripheral for nRF52840 DK (PCA10056) exposing a table of 32-bit parameters over a custom
