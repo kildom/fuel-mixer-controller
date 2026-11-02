@@ -1,6 +1,6 @@
-# BLE Relays web client
+# Fuel Mixer web client
 
-Browser GUI for the BLE Relays parameter service, using the Web Bluetooth API.
+Browser GUI for the Fuel Mixer parameter service, using the Web Bluetooth API.
 No build step or dependencies; plain HTML/CSS/JS.
 
 ## Running
@@ -9,7 +9,7 @@ Web Bluetooth needs a Chromium-based browser (Chrome, Edge) and a secure context
 (`https://` or `http://localhost`). Serve this directory locally:
 
 ```bash
-cd _my/ble_relays/web_client
+cd web_client
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 

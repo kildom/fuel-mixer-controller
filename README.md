@@ -1,4 +1,4 @@
-# BLE relays
+# Fuel Mixer
 
 BLE peripheral for nRF52840 DK (PCA10056) exposing a table of 32-bit parameters over a custom
 GATT service. Selected parameters are stored persistently (Zephyr settings on NVS).
@@ -6,22 +6,22 @@ GATT service. Selected parameters are stored persistently (Zephyr settings on NV
 ## Build and flash
 
 ```bash
-ncs7 west build -p -b nrf52840dk/nrf52840 -d _my/ble_relays/build _my/ble_relays
-ncs7 west flash -d _my/ble_relays/build --dev-id <serial>
+ncs7 west build -p -b nrf52840dk/nrf52840 -d build
+ncs7 west flash -d build --dev-id <serial>
 ```
 
 Logs are on UART (VCOM0, 115200 baud).
 
 ## GATT service
 
-Advertised name: `BLE_Relays`.
+Advertised name: `Fuel Mixer`.
 
 | Item                 | UUID                                   | Properties              |
 | -------------------- | -------------------------------------- | ----------------------- |
-| Service              | `8f5b0001-3c2a-4e1d-9b7e-2f4a6c8d1e01` |                         |
-| Parameter write      | `8f5b0002-3c2a-4e1d-9b7e-2f4a6c8d1e01` | Write, Write w/o resp.  |
-| Parameter read       | `8f5b0003-3c2a-4e1d-9b7e-2f4a6c8d1e01` | Read                    |
-| Description (JSON)   | `8f5b0004-3c2a-4e1d-9b7e-2f4a6c8d1e01` | Read, Write             |
+| Service              | `dbf0c631-883a-4d52-b455-4a9e5cd94bc3` |                         |
+| Parameter write      | `dbf0c632-883a-4d52-b455-4a9e5cd94bc3` | Write, Write w/o resp.  |
+| Parameter read       | `dbf0c633-883a-4d52-b455-4a9e5cd94bc3` | Read                    |
+| Description (JSON)   | `dbf0c634-883a-4d52-b455-4a9e5cd94bc3` | Read, Write             |
 
 The parameter read characteristic returns a 5-byte packet: `[ID (1 byte)][value (int32, signed, little-endian)]`.
 The write characteristic accepts a 9-byte packet with the same first 5 bytes, followed by
@@ -53,7 +53,7 @@ JSON format (minified on the device):
 ```json
 {
   "version": 1,
-  "device": "BLE Relays",
+  "device": "Fuel Mixer",
   "parameters": [
     { "id": 0, "name": "Next read index", "hidden": true },
     { "id": 1, "name": "Outputs", "description": "...", "persistent": true }

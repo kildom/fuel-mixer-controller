@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  *
- * BLE relays: BLE peripheral exposing a table of parameters over a custom GATT service.
+ * Fuel Mixer: BLE peripheral exposing a table of parameters over a custom GATT service.
  */
 
 #include <zephyr/bluetooth/bluetooth.h>
@@ -103,7 +103,7 @@ int main(void)
 {
 	int err;
 
-	LOG_INF("BLE relays application starting");
+	LOG_INF("Fuel Mixer application starting");
 
 	err = io_init();
 	if (err) {

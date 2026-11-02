@@ -1,7 +1,7 @@
 'use strict';
 
 /*
- * BLE Relays web client (Web Bluetooth).
+ * Fuel Mixer web client (Web Bluetooth).
  *
  * Protocol: the write characteristic uses a 9-byte packet
  * [ID][int32 little-endian value][uint32 little-endian validation value 0x113cfdf9].
@@ -14,10 +14,10 @@
  * [uint16 LE total length][uint16 LE offset][data] and advances the offset.
  */
 
-const SERVICE_UUID = '8f5b0001-3c2a-4e1d-9b7e-2f4a6c8d1e01';
-const WRITE_CHAR_UUID = '8f5b0002-3c2a-4e1d-9b7e-2f4a6c8d1e01';
-const READ_CHAR_UUID = '8f5b0003-3c2a-4e1d-9b7e-2f4a6c8d1e01';
-const DESC_CHAR_UUID = '8f5b0004-3c2a-4e1d-9b7e-2f4a6c8d1e01';
+const SERVICE_UUID = 'dbf0c631-883a-4d52-b455-4a9e5cd94bc3';
+const WRITE_CHAR_UUID = 'dbf0c632-883a-4d52-b455-4a9e5cd94bc3';
+const READ_CHAR_UUID = 'dbf0c633-883a-4d52-b455-4a9e5cd94bc3';
+const DESC_CHAR_UUID = 'dbf0c634-883a-4d52-b455-4a9e5cd94bc3';
 
 const PARAM_NEXT_READ = 0;
 const MAX_PARAMS = 256;

@@ -1,6 +1,6 @@
 {
 	"version": 1,
-	"device": "BLE Relays",
+	"device": "Fuel Mixer",
 	"parameters": [
 		{
 			"id": 0,
