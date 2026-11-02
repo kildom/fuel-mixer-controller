@@ -103,4 +103,4 @@ the GPIO table below). GPIO assignment is in
 
 ## Web client
 
-A browser GUI using Web Bluetooth is in [web_client/](web_client/README.md).
+A browser GUI using Web Bluetooth is in [docs/](docs/README.md).

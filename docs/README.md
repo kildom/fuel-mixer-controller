@@ -9,7 +9,7 @@ Web Bluetooth needs a Chromium-based browser (Chrome, Edge) and a secure context
 (`https://` or `http://localhost`). Serve this directory locally:
 
 ```bash
-cd web_client
+cd docs
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
@@ -37,6 +37,14 @@ the browser. The host Bluetooth adapter must also be on (`rfkill unblock bluetoo
   An edited field is not overwritten by scanning until it is written or reverted.
 - A write is sent right away, even in the middle of a scan or during the pause between scans,
   and the parameter is read back immediately afterwards. An interrupted scan then continues.
+- The client logs each changed value read from the device, plus connection and disconnection
+  events. A write is not logged directly; its read-back is logged only if the device value changed.
+- **Download VCD** downloads the in-memory log as a Value Change Dump file. Each parameter is a
+  32-bit signal; each described flag is also a separate 1-bit signal. Values and flags become
+  `X` when disconnected. Signal names use `<parameter>_<id>` and
+  `<group>_<flag>_<id>_<bit>` (omitting an empty group); names preserve case, remove bracketed
+  text, transliterate to ASCII, and replace other characters with underscores. The log contains
+  only changes rather than periodic full-state snapshots.
 - Writes include the required `0x113cfdf9` validation value. This helps reject accidental writes
   from incompatible clients; it is not cryptographic authentication.
 - Read-only parameters show read-only fields and a disabled **Write** button. Badges mark

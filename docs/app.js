@@ -32,6 +32,7 @@ const ui = {
 	connectBtn: document.getElementById('connect-btn'),
 	disconnectBtn: document.getElementById('disconnect-btn'),
 	refreshBtn: document.getElementById('refresh-btn'),
+	downloadVcdBtn: document.getElementById('download-vcd-btn'),
 	status: document.getElementById('status'),
 	scanIndicator: document.getElementById('scan-indicator'),
 	scanText: document.getElementById('scan-text'),
@@ -57,6 +58,10 @@ let connected = false;
 let scanGeneration = 0;
 /* Visible rows by parameter ID. */
 let rows = new Map();
+/* Store only connection transitions and values that differ from the last device read. */
+let deviceLog = [];
+let lastLoggedValues = new Map();
+let logSessionActive = false;
 
 /*
  * All GATT traffic after connecting is done by the scan loop, so operations never overlap.
@@ -83,6 +88,145 @@ function showError(message) {
 
 function paramInfo(id) {
 	return parameters[id] || { name: `Parameter ${id}`, description: 'Unknown parameter', readOnly: true };
+}
+
+function addLogEvent(event) {
+	deviceLog.push({ ...event, timestamp: Date.now() });
+	ui.downloadVcdBtn.disabled = false;
+}
+
+function recordParameterValue(id, value) {
+	const info = parameters[id];
+	if (!logSessionActive || !info || info.hidden || lastLoggedValues.get(id) === value) {
+		return;
+	}
+	lastLoggedValues.set(id, value);
+	addLogEvent({ type: 'parameter', id, value });
+}
+
+function startLogSession() {
+	lastLoggedValues.clear();
+	logSessionActive = true;
+	addLogEvent({ type: 'connected' });
+}
+
+function normalizeVcdName(value) {
+	const polishCharacters = {
+		'ę': 'e', 'ó': 'o', 'ą': 'a', 'ś': 's', 'ł': 'l',
+		'ż': 'z', 'ź': 'z', 'ć': 'c', 'ń': 'n',
+		'Ę': 'E', 'Ó': 'O', 'Ą': 'A', 'Ś': 'S', 'Ł': 'L',
+		'Ż': 'Z', 'Ź': 'Z', 'Ć': 'C', 'Ń': 'N',
+	};
+	return value.replace(/\([^)]*\)/g, '')
+		.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+		.replace(/[ęóąśłżźćńĘÓĄŚŁŻŹĆŃ]/g, (character) => polishCharacters[character])
+		.replace(/[^A-Za-z0-9_]/g, '_')
+		.replace(/_+/g, '_')
+		.replace(/^_+|_+$/g, '');
+}
+
+function createVcd() {
+	const signals = [];
+	let nextCode = 0;
+	const newCode = () => `v${nextCode++}`;
+	const connectionSignal = { code: newCode(), width: 1 };
+	signals.push({ ...connectionSignal, reference: 'connected' });
+
+	const parameterSignals = new Map();
+	for (const info of parameters) {
+		if (info.hidden) {
+			continue;
+		}
+		const valueSignal = { code: newCode(), width: 32 };
+		const flagSignals = info.flags.map(() => ({ code: newCode(), width: 1 }));
+		parameterSignals.set(info.id, { valueSignal, flagSignals });
+		signals.push({
+			...valueSignal,
+			reference: `${normalizeVcdName(info.name)}_${info.id}`,
+		});
+		let group = '';
+		for (let bit = 0; bit < flagSignals.length; bit++) {
+			const label = info.flags[bit];
+			const groupMatch = label.match(/^\[([^\]]+)\]\s*(.*)$/);
+			let name = label;
+			if (groupMatch) {
+				group = groupMatch[1];
+				name = groupMatch[2] || group;
+			}
+			const parts = [group, name, info.id, bit]
+				.map((part) => typeof part === 'number' ? String(part) : normalizeVcdName(part))
+				.filter(Boolean);
+			signals.push({
+				...flagSignals[bit],
+				reference: parts.join('_'),
+			});
+		}
+	}
+
+	const lines = [
+		`$date ${new Date(deviceLog[0].timestamp).toISOString()} $end`,
+		`$version BLE Parameters web client $end`,
+		'$timescale 1 ms $end',
+		'$scope module device $end',
+	];
+	for (const signal of signals) {
+		lines.push(`$var wire ${signal.width} ${signal.code} ${signal.reference} $end`);
+	}
+	lines.push('$upscope $end', '$enddefinitions $end', '$dumpvars');
+	for (const signal of signals) {
+		lines.push(signal.width === 1
+			? `x${signal.code}`
+			: `b${'x'.repeat(signal.width)} ${signal.code}`);
+	}
+	lines.push('$end');
+
+	const disconnectLines = [`0${connectionSignal.code}`];
+	for (const { valueSignal, flagSignals } of parameterSignals.values()) {
+		disconnectLines.push(`b${'x'.repeat(32)} ${valueSignal.code}`);
+		for (const signal of flagSignals) {
+			disconnectLines.push(`x${signal.code}`);
+		}
+	}
+
+	const firstTimestamp = deviceLog[0].timestamp;
+	let previousTime = null;
+	for (const event of deviceLog) {
+		const elapsed = Math.max(0, event.timestamp - firstTimestamp);
+		const time = Math.max(previousTime ?? 0, elapsed);
+		if (time !== previousTime) {
+			lines.push(`#${time}`);
+			previousTime = time;
+		}
+		if (event.type === 'connected') {
+			lines.push(`1${connectionSignal.code}`);
+		} else if (event.type === 'disconnected') {
+			lines.push(...disconnectLines);
+		} else if (event.type === 'parameter') {
+			const paramSignals = parameterSignals.get(event.id);
+			if (!paramSignals) {
+				continue;
+			}
+			lines.push(`b${(event.value >>> 0).toString(2).padStart(32, '0')} ${paramSignals.valueSignal.code}`);
+			for (let bit = 0; bit < paramSignals.flagSignals.length; bit++) {
+				const active = (event.value >>> bit) & 1;
+				lines.push(`${active ? '1' : '0'}${paramSignals.flagSignals[bit].code}`);
+			}
+		}
+	}
+	return `${lines.join('\n')}\n`;
+}
+
+function downloadVcd() {
+	if (!deviceLog.length || !parameters.length) {
+		return;
+	}
+	const blob = new Blob([createVcd()], { type: 'text/vcd' });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = `${normalizeVcdName(ui.title.textContent) || 'device'}.vcd`;
+	link.click();
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /* Sleep that ends early when wakeScanLoop() is called. */
@@ -393,6 +537,7 @@ async function scanLoop(generation, count) {
 		const result = await gattRead();
 		devicePtr = (result.id + 1) % count;
 		updateRow(result.id, result.value);
+		recordParameterValue(result.id, result.value);
 		return result;
 	};
 
@@ -485,6 +630,10 @@ function onDisconnected() {
 	scanGeneration++;
 	refreshRequested = false;
 	rejectPendingWrites('Disconnected');
+	if (logSessionActive) {
+		addLogEvent({ type: 'disconnected' });
+		logSessionActive = false;
+	}
 	if (wakeScanLoop) {
 		wakeScanLoop();
 	}
@@ -539,6 +688,7 @@ async function connect() {
 		ui.status.textContent = 'Reading parameter description…';
 		const desc = await readDescription();
 		parameters = desc.parameters;
+		startLogSession();
 		ui.title.textContent = desc.device || device.name || 'BLE device';
 		document.title = ui.title.textContent;
 
@@ -580,3 +730,4 @@ function disconnect() {
 ui.connectBtn.addEventListener('click', connect);
 ui.disconnectBtn.addEventListener('click', disconnect);
 ui.refreshBtn.addEventListener('click', refresh);
+ui.downloadVcdBtn.addEventListener('click', downloadVcd);
