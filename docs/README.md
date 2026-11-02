@@ -45,6 +45,13 @@ the browser. The host Bluetooth adapter must also be on (`rfkill unblock bluetoo
   `<group>_<flag>_<id>_<bit>` (omitting an empty group); names preserve case, remove bracketed
   text, transliterate to ASCII, and replace other characters with underscores. The log contains
   only changes rather than periodic full-state snapshots.
+- **Open in Perfetto** converts the in-memory log to Chrome Trace Event Format and opens it in a
+  new tab at <https://ui.perfetto.dev/>. Parameter values are complete events named by their
+  decimal value. Set flags and disconnected periods are also shown as complete events; flag
+  events end 0.1 ms before the next change. Non-overlapping flags in the same group share a
+  track named for the group, with each event named for its flag and group. Overlapping group
+  flags use separate tracks. The trace is passed directly to the hosted Perfetto UI in the
+  browser; this web client does not upload it to a separate endpoint.
 - Writes include the required `0x113cfdf9` validation value. This helps reject accidental writes
   from incompatible clients; it is not cryptographic authentication.
 - Read-only parameters show read-only fields and a disabled **Write** button. Badges mark

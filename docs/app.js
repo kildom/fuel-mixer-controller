@@ -27,12 +27,17 @@ const DESC_HEADER_SIZE = 4;
 const SCAN_DELAY_MS = 1000;
 const MIN_VALUE = -2147483648;
 const MAX_VALUE = 2147483647;
+const PERFETTO_ORIGIN = 'https://ui.perfetto.dev';
+const PERFETTO_PING_INTERVAL_MS = 50;
+const PERFETTO_TIMEOUT_MS = 30000;
+const PERFETTO_EVENT_GAP_US = 100;
 
 const ui = {
 	connectBtn: document.getElementById('connect-btn'),
 	disconnectBtn: document.getElementById('disconnect-btn'),
 	refreshBtn: document.getElementById('refresh-btn'),
 	downloadVcdBtn: document.getElementById('download-vcd-btn'),
+	openPerfettoBtn: document.getElementById('open-perfetto-btn'),
 	status: document.getElementById('status'),
 	scanIndicator: document.getElementById('scan-indicator'),
 	scanText: document.getElementById('scan-text'),
@@ -93,6 +98,7 @@ function paramInfo(id) {
 function addLogEvent(event) {
 	deviceLog.push({ ...event, timestamp: Date.now() });
 	ui.downloadVcdBtn.disabled = false;
+	ui.openPerfettoBtn.disabled = false;
 }
 
 function recordParameterValue(id, value) {
@@ -214,6 +220,288 @@ function createVcd() {
 		}
 	}
 	return `${lines.join('\n')}\n`;
+}
+
+function getFlagNameAndGroup(label, previousGroup) {
+	const groupMatch = label.match(/^\[([^\]]+)\]\s*(.*)$/);
+	if (groupMatch) {
+		return {
+			group: groupMatch[1],
+			name: groupMatch[2] || groupMatch[1],
+		};
+	}
+	return { group: previousGroup, name: label };
+}
+
+function createPerfettoTrace() {
+	const traceEvents = [];
+	const processId = 1;
+	let nextThreadId = 1;
+	let activeDisconnected = null;
+	const parameterTracks = new Map();
+	const flagDescriptors = new Map();
+	const flagGroups = new Map();
+	const activeParameterValues = new Map();
+	const activeFlags = new Map();
+
+	const addThreadMetadata = (threadId, trackName) => {
+		traceEvents.push({
+			name: 'thread_name',
+			ph: 'M',
+			pid: processId,
+			tid: threadId,
+			args: { name: trackName },
+		});
+	};
+	const addCompleteEvent = (track, name, startUs, endUs, args = {}) => {
+		traceEvents.push({
+			name,
+			cat: 'BLE device state',
+			ph: 'X',
+			ts: startUs,
+			dur: Math.max(0, endUs - startUs),
+			pid: processId,
+			tid: track.threadId,
+			...(Object.keys(args).length ? { args } : {}),
+		});
+	};
+
+	traceEvents.push({
+		name: 'process_name',
+		ph: 'M',
+		pid: processId,
+		args: { name: ui.title.textContent || 'BLE device' },
+	});
+
+	for (const info of parameters) {
+		if (info.hidden) {
+			continue;
+		}
+		const parameterTrack = {
+			threadId: nextThreadId++,
+			name: `${info.name} (${info.id})`,
+		};
+		parameterTracks.set(info.id, parameterTrack);
+		addThreadMetadata(parameterTrack.threadId, parameterTrack.name);
+
+		let group = '';
+		const perFlag = info.flags.map((label, bit) => {
+			const parsed = getFlagNameAndGroup(label, group);
+			group = parsed.group;
+			const descriptor = {
+				id: info.id,
+				bit,
+				group: parsed.group,
+				name: parsed.name,
+				events: [],
+			};
+			if (parsed.group) {
+				const groupKey = JSON.stringify([info.id, parsed.group]);
+				if (!flagGroups.has(groupKey)) {
+					flagGroups.set(groupKey, []);
+				}
+				flagGroups.get(groupKey).push(descriptor);
+			}
+			return descriptor;
+		});
+		flagDescriptors.set(info.id, perFlag);
+	}
+
+	const disconnectedTrack = { name: 'Device disconnected' };
+
+	const firstTimestamp = deviceLog[0].timestamp;
+	const toMicroseconds = (timestamp) => Math.max(0, timestamp - firstTimestamp) * 1000;
+	const closeActiveFlags = (endUs) => {
+		for (const [key, active] of activeFlags) {
+			const [id, bit] = key.split(':').map(Number);
+			flagDescriptors.get(id)[bit].events.push({
+				startUs: active.startUs,
+				endUs: Math.max(active.startUs, endUs - PERFETTO_EVENT_GAP_US),
+			});
+		}
+		activeFlags.clear();
+	};
+	const closeActiveSignals = (timestamp) => {
+		const timeUs = toMicroseconds(timestamp);
+		for (const [id, active] of activeParameterValues) {
+			addCompleteEvent(
+				parameterTracks.get(id),
+				String(active.value),
+				active.startUs,
+				Math.max(active.startUs, timeUs - PERFETTO_EVENT_GAP_US),
+				{ value: active.value },
+			);
+		}
+		activeParameterValues.clear();
+		closeActiveFlags(timeUs);
+	};
+
+	for (const event of deviceLog) {
+		const timestampUs = toMicroseconds(event.timestamp);
+		if (event.type === 'connected') {
+			if (activeDisconnected !== null) {
+				addCompleteEvent(disconnectedTrack, 'Disconnected', activeDisconnected, timestampUs);
+				activeDisconnected = null;
+			}
+			continue;
+		}
+		if (event.type === 'disconnected') {
+			closeActiveSignals(event.timestamp);
+			activeDisconnected = timestampUs;
+			continue;
+		}
+		if (event.type !== 'parameter' || !parameterTracks.has(event.id)) {
+			continue;
+		}
+
+		const previous = activeParameterValues.get(event.id);
+		if (previous) {
+			addCompleteEvent(
+				parameterTracks.get(event.id),
+				String(previous.value),
+				previous.startUs,
+				Math.max(previous.startUs, timestampUs - PERFETTO_EVENT_GAP_US),
+				{ value: previous.value },
+			);
+		}
+		activeParameterValues.set(event.id, { value: event.value, startUs: timestampUs });
+
+		const tracks = flagDescriptors.get(event.id);
+		for (let bit = 0; bit < tracks.length; bit++) {
+			const key = `${event.id}:${bit}`;
+			const isSet = ((event.value >>> bit) & 1) !== 0;
+			const active = activeFlags.get(key);
+			if (isSet && !active) {
+				activeFlags.set(key, { startUs: timestampUs });
+			} else if (!isSet && active) {
+				tracks[bit].events.push({
+					startUs: active.startUs,
+					endUs: Math.max(active.startUs, timestampUs - PERFETTO_EVENT_GAP_US),
+				});
+				activeFlags.delete(key);
+			}
+		}
+	}
+
+	const exportTimestamp = Date.now();
+	closeActiveSignals(exportTimestamp);
+
+	const assignFlagTrack = (descriptor, track) => {
+		descriptor.track = track;
+	};
+	const assignIndividualTrack = (descriptor) => {
+		const track = {
+			threadId: nextThreadId++,
+			name: `${descriptor.group ? `${descriptor.group}: ` : ''}${descriptor.name} ` +
+				`(${descriptor.id}, bit ${descriptor.bit})`,
+		};
+		assignFlagTrack(descriptor, track);
+		addThreadMetadata(track.threadId, track.name);
+	};
+	for (const descriptors of flagGroups.values()) {
+		const events = descriptors.flatMap((descriptor) =>
+			descriptor.events.map((event) => ({ ...event, descriptor })))
+			.filter((event) => event.endUs > event.startUs)
+			.sort((a, b) => a.startUs - b.startUs);
+		let latestEndUs = -1;
+		const overlaps = events.some((event) => {
+			if (event.startUs < latestEndUs) {
+				return true;
+			}
+			latestEndUs = Math.max(latestEndUs, event.endUs);
+			return false;
+		});
+		if (!overlaps) {
+			const group = descriptors[0].group;
+			const track = { threadId: nextThreadId++, name: group };
+			addThreadMetadata(track.threadId, track.name);
+			for (const descriptor of descriptors) {
+				assignFlagTrack(descriptor, track);
+			}
+		} else {
+			for (const descriptor of descriptors) {
+				assignIndividualTrack(descriptor);
+			}
+		}
+	}
+	disconnectedTrack.threadId = nextThreadId++;
+	addThreadMetadata(disconnectedTrack.threadId, disconnectedTrack.name);
+	for (const descriptors of flagDescriptors.values()) {
+		for (const descriptor of descriptors) {
+			if (!descriptor.track) {
+				assignIndividualTrack(descriptor);
+			}
+			for (const event of descriptor.events) {
+				addCompleteEvent(
+					descriptor.track,
+					`${descriptor.name} (${descriptor.group})`,
+					event.startUs,
+					event.endUs,
+				);
+			}
+		}
+	}
+	if (activeDisconnected !== null) {
+		addCompleteEvent(
+			disconnectedTrack,
+			'Disconnected',
+			activeDisconnected,
+			toMicroseconds(exportTimestamp),
+		);
+	}
+
+	traceEvents.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+	return { traceEvents, displayTimeUnit: 'ms' };
+}
+
+function openInPerfetto() {
+	if (!deviceLog.length || !parameters.length) {
+		return;
+	}
+
+	const traceWindow = window.open(PERFETTO_ORIGIN, '_blank');
+	if (!traceWindow) {
+		showError('The Perfetto tab was blocked by the browser. Allow pop-ups and try again.');
+		return;
+	}
+
+	showError('');
+	const traceJson = JSON.stringify(createPerfettoTrace());
+	const messageHandler = (event) => {
+		if (event.origin !== PERFETTO_ORIGIN || event.source !== traceWindow || event.data !== 'PONG') {
+			return;
+		}
+		cleanup();
+		const reopenUrl = new URL(location.href);
+		reopenUrl.hash = '#reopen=ble-device-log';
+		const buffer = new TextEncoder().encode(traceJson).buffer;
+		traceWindow.postMessage({
+			perfetto: {
+				buffer,
+				title: `${ui.title.textContent || 'BLE device'} device log`,
+				url: reopenUrl.toString(),
+			},
+		}, PERFETTO_ORIGIN, [buffer]);
+	};
+	const pingTimer = setInterval(() => {
+		if (traceWindow.closed) {
+			cleanup();
+			showError('The Perfetto tab was closed before it finished loading.');
+			return;
+		}
+		traceWindow.postMessage('PING', '*');
+	}, PERFETTO_PING_INTERVAL_MS);
+	const timeoutTimer = setTimeout(() => {
+		cleanup();
+		showError('Perfetto did not respond. Check your connection and try again.');
+	}, PERFETTO_TIMEOUT_MS);
+	const cleanup = () => {
+		clearInterval(pingTimer);
+		clearTimeout(timeoutTimer);
+		window.removeEventListener('message', messageHandler);
+	};
+
+	window.addEventListener('message', messageHandler);
 }
 
 function downloadVcd() {
@@ -731,3 +1019,4 @@ ui.connectBtn.addEventListener('click', connect);
 ui.disconnectBtn.addEventListener('click', disconnect);
 ui.refreshBtn.addEventListener('click', refresh);
 ui.downloadVcdBtn.addEventListener('click', downloadVcd);
+ui.openPerfettoBtn.addEventListener('click', openInPerfetto);
