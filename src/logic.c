@@ -81,6 +81,8 @@ static int param_minimalny_czas_pracy;
 static int param_proporcja_rozpalki;
 static int param_proporcja_paliwa_1;
 static int param_proporcja_paliwa_2;
+static int param_predkosc_oprozniania_zbiornika_1;
+static int param_predkosc_oprozniania_zbiornika_2;
 static int param_czas_rozpalania;
 static int param_czas_wykrycia_nasypu_rozpalki;
 static int param_czas_wykrycia_wygaszenia;
@@ -122,15 +124,17 @@ static void stan(int stan_mask, bool on)
 }
 
 
-static void start_procesowania(int aktualny_czas)
+static void start_procesowania(int64_t aktualny_czas_ms)
 {
 	uint32_t inputs_mask = io_sample_input();
 
-	now = aktualny_czas;
+	now = (int32_t)TIME_FROM_MS(aktualny_czas_ms);
 	param_minimalny_czas_pracy = TIME_FROM_MIN(params_get(PARAM_MINIMALNY_CZAS_PRACY));
 	param_proporcja_rozpalki = params_get(PARAM_PROPORCJA_ROZPALKI);
 	param_proporcja_paliwa_1 = params_get(PARAM_PROPORCJA_PALIWA_1);
 	param_proporcja_paliwa_2 = params_get(PARAM_PROPORCJA_PALIWA_2);
+	param_predkosc_oprozniania_zbiornika_1 = params_get(PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_1);
+	param_predkosc_oprozniania_zbiornika_2 = params_get(PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_2);
 	param_czas_rozpalania = TIME_FROM_MIN(params_get(PARAM_CZAS_ROZPALANIA));
 	param_czas_wykrycia_nasypu_rozpalki = TIME_FROM_SEC(params_get(PARAM_CZAS_WYKRYCIA_NASYPU_ROZPALKI));
 	param_czas_wykrycia_wygaszenia = TIME_FROM_MIN(params_get(PARAM_CZAS_WYKRYCIA_WYGASZENIA));
@@ -167,6 +171,75 @@ static void output(enum io_output id, bool on)
 		default:
 			break;
 	}
+}
+
+
+#pragma endregion
+//--------------------------------------------------------------
+
+
+//--------------------------------------------------------------
+#pragma region Stan zbiornikow
+
+
+static void aktualizuj_stan_zbiornika(int predkosc_oprozniania, bool podajnik_aktywny,
+				      int64_t czas_pracy_ms, int64_t *skumulowany_czas_ms,
+				      uint8_t parametr_stanu)
+{
+	int64_t ms_na_procent;
+	int err;
+
+	if (!podajnik_aktywny || predkosc_oprozniania <= 0) {
+		return;
+	}
+
+	ms_na_procent = 3600000LL / predkosc_oprozniania;
+	if (ms_na_procent == 0) {
+		ms_na_procent = 1;
+	}
+
+	*skumulowany_czas_ms += czas_pracy_ms;
+	if (*skumulowany_czas_ms < ms_na_procent) {
+		return;
+	}
+
+	int stan_zbiornika = params_get(parametr_stanu);
+
+	err = params_write(parametr_stanu, stan_zbiornika - 1);
+	if (err) {
+		LOG_ERR("Nie udało się zapisać stanu zbiornika (parametr %u, %d)",
+			parametr_stanu, err);
+		return;
+	}
+
+	*skumulowany_czas_ms -= ms_na_procent;
+}
+
+
+static void procesuj_stan_zbiornikow(int64_t aktualny_czas_ms)
+{
+	static bool zainicjalizowano_czas;
+	static int64_t poprzedni_czas_ms;
+	static int64_t skumulowany_czas_zbiornika_1_ms;
+	static int64_t skumulowany_czas_zbiornika_2_ms;
+	int64_t czas_pracy_ms = 0;
+
+	if (zainicjalizowano_czas) {
+		czas_pracy_ms = aktualny_czas_ms - poprzedni_czas_ms;
+		if (czas_pracy_ms < 0) {
+			czas_pracy_ms = 0;
+		}
+	} else {
+		zainicjalizowano_czas = true;
+	}
+	poprzedni_czas_ms = aktualny_czas_ms;
+
+	aktualizuj_stan_zbiornika(param_predkosc_oprozniania_zbiornika_1,
+				  output_podajnik_1, czas_pracy_ms,
+				  &skumulowany_czas_zbiornika_1_ms, PARAM_STAN_ZBIORNIKA_1);
+	aktualizuj_stan_zbiornika(param_predkosc_oprozniania_zbiornika_2,
+				  output_podajnik_2, czas_pracy_ms,
+				  &skumulowany_czas_zbiornika_2_ms, PARAM_STAN_ZBIORNIKA_2);
 }
 
 
@@ -554,7 +627,7 @@ static void procesuj_przycisk()
 //--------------------------------------------------------------
 
 
-void procesuj(int aktualny_czas)
+void procesuj(int64_t aktualny_czas_ms)
 {
 	static bool start = true;
 
@@ -567,7 +640,8 @@ void procesuj(int aktualny_czas)
 		output(IO_HEATER, false);
 	}
 
-	start_procesowania(aktualny_czas);
+	start_procesowania(aktualny_czas_ms);
+	procesuj_stan_zbiornikow(aktualny_czas_ms);
 	procesuj_sensor(false);
 	procesuj_podajnik();
 	procesuj_pompe();

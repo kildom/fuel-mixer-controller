@@ -10,66 +10,90 @@
 		},
 		{
 			"id": 1,
-			"name": "Minimalny czas pracy",
-			"description": "[min]",
+			"name": "Stan zbiornika 1",
+			"description": "[%]",
 			"persistent": true
 		},
 		{
 			"id": 2,
-			"name": "Proporcja rozpałki (czystego paliwa 1)",
+			"name": "Stan zbiornika 2",
 			"description": "[%]",
 			"persistent": true
 		},
 		{
 			"id": 3,
-			"name": "Proporcja paliwa 1",
-			"description": "[%]",
+			"name": "Minimalny czas pracy",
+			"description": "[min]",
 			"persistent": true
 		},
 		{
 			"id": 4,
-			"name": "Proporcja paliwa 2",
+			"name": "Proporcja rozpałki (czystego paliwa 1)",
 			"description": "[%]",
 			"persistent": true
 		},
 		{
 			"id": 5,
+			"name": "Proporcja paliwa 1",
+			"description": "[%]",
+			"persistent": true
+		},
+		{
+			"id": 6,
+			"name": "Proporcja paliwa 2",
+			"description": "[%]",
+			"persistent": true
+		},
+		{
+			"id": 7,
+			"name": "Prędkość opróżniania zbiornika 1",
+			"description": "[%/h]",
+			"persistent": true
+		},
+		{
+			"id": 8,
+			"name": "Prędkość opróżniania zbiornika 2",
+			"description": "[%/h]",
+			"persistent": true
+		},
+		{
+			"id": 9,
 			"name": "Czas rozpalania (czystym paliwem 1)",
 			"description": "[min]",
 			"persistent": true
 		},
 		{
-			"id": 6,
+			"id": 10,
 			"name": "Czas wykrycia nasypu rozpałki",
 			"description": "[sekundy]",
 			"persistent": true
 		},
 		{
-			"id": 7,
+			"id": 11,
 			"name": "Czas wykrycia wygaszenia",
 			"description": "[min]",
 			"persistent": true
 		},
 		{
-			"id": 8,
+			"id": 12,
 			"name": "Maksymalny czas przedłużenia sygnału",
 			"description": "[sekundy]",
 			"persistent": true
 		},
 		{
-			"id": 9,
+			"id": 13,
 			"name": "Czas pracy pompy",
 			"description": "[min] Zero, żeby pracowała cały czas",
 			"persistent": true
 		},
 		{
-			"id": 10,
+			"id": 14,
 			"name": "Wymuszona praca",
 			"description": "[godziny] Zapisz, żeby wymusić ogrzewanie przez podany czas",
 			"persistent": false
 		},
 		{
-			"id": 11,
+			"id": 15,
 			"name": "Podgląd stanu",
 			"description": "Stan podglądu urządzenia",
 			"readOnly": true,

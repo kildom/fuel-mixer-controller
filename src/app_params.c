@@ -26,6 +26,14 @@ struct parameter params_table[] = {
 		.persistent = false,
 		.write_callback = next_read_write_cb,
 	},
+	[PARAM_STAN_ZBIORNIKA_1] = {
+		.initial_value = 100,
+		.persistent = true,
+	},
+	[PARAM_STAN_ZBIORNIKA_2] = {
+		.initial_value = 100,
+		.persistent = true,
+	},
 	[PARAM_MINIMALNY_CZAS_PRACY] = {
 		.initial_value = 2 * 60,
 		.persistent = true,
@@ -40,6 +48,14 @@ struct parameter params_table[] = {
 	},
 	[PARAM_PROPORCJA_PALIWA_2] = {
 		.initial_value = 70,
+		.persistent = true,
+	},
+	[PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_1] = {
+		.initial_value = 10,
+		.persistent = true,
+	},
+	[PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_2] = {
+		.initial_value = 10,
 		.persistent = true,
 	},
 	[PARAM_CZAS_ROZPALANIA] = {

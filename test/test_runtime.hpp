@@ -2,6 +2,7 @@
 #define TEST_RUNTIME_HPP_
 
 void param(int parameter_id, int value);
+int get_param(int parameter_id);
 void force_work(int hours);
 void on(int input_id);
 void off(int input_id);

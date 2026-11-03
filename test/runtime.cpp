@@ -20,10 +20,14 @@ namespace {
 
 constexpr std::array<int32_t, PARAM_COUNT> default_parameters = {
 	0,   // PARAM_NEXT_READ
+	0,   // PARAM_STAN_ZBIORNIKA_1
+	0,   // PARAM_STAN_ZBIORNIKA_2
 	120, // PARAM_MINIMALNY_CZAS_PRACY: 2 minutes
 	100, // PARAM_PROPORCJA_ROZPALKI
 	30,  // PARAM_PROPORCJA_PALIWA_1
 	70,  // PARAM_PROPORCJA_PALIWA_2
+	0,   // PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_1
+	0,   // PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_2
 	15,  // PARAM_CZAS_ROZPALANIA: minutes
 	15,  // PARAM_CZAS_WYKRYCIA_NASYPU_ROZPALKI: seconds
 	5,   // PARAM_CZAS_WYKRYCIA_WYGASZENIA: minutes
@@ -102,10 +106,14 @@ void initialize_vcd(const char *filename)
 
 	const std::array<const char *, PARAM_COUNT> parameter_names = {
 		"next_read",
+		"stan_zbiornika_1",
+		"stan_zbiornika_2",
 		"minimalny_czas_pracy",
 		"proporcja_rozpalki",
 		"proporcja_paliwa_1",
 		"proporcja_paliwa_2",
+		"predkosc_oprozniania_zbiornika_1",
+		"predkosc_oprozniania_zbiornika_2",
 		"czas_rozpalania",
 		"czas_wykrycia_nasypu_rozpalki",
 		"czas_wykrycia_wygaszenia",
@@ -187,6 +195,16 @@ extern "C" int32_t params_get(uint8_t id)
 	return parameter_values[id];
 }
 
+extern "C" int params_write(uint8_t id, int32_t value)
+{
+	if (id >= PARAM_COUNT) {
+		fail_from_c("logic wrote an invalid parameter ID");
+	}
+	parameter_values[id] = value;
+	write_parameter(IO_INPUT_COUNT + IO_OUTPUT_COUNT + id, value, current_time);
+	return 0;
+}
+
 extern "C" void params_set(uint8_t id, int32_t value)
 {
 	if (id >= PARAM_COUNT) {
@@ -232,6 +250,14 @@ void param(int parameter_id, int value)
 	parameter_values[parameter_id] = value;
 	write_parameter(IO_INPUT_COUNT + IO_OUTPUT_COUNT + parameter_id,
 			value, current_time);
+}
+
+int get_param(int parameter_id)
+{
+	if (parameter_id < 0 || parameter_id >= PARAM_COUNT) {
+		throw std::out_of_range("invalid parameter ID");
+	}
+	return parameter_values[parameter_id];
 }
 
 void force_work(int hours)
@@ -282,7 +308,7 @@ void delay(double seconds)
 	}
 	const long long ticks = std::llround(seconds * 10.0);
 	for (long long i = 0; i < ticks; ++i) {
-		procesuj(current_time);
+		procesuj(static_cast<int64_t>(current_time) * 100);
 		process_outputs();
 		++current_time;
 	}
@@ -302,7 +328,7 @@ void jump(double seconds)
 		throw std::invalid_argument("jump target cannot be earlier than current time");
 	}
 	while (current_time < target_time) {
-		procesuj(current_time);
+		procesuj(static_cast<int64_t>(current_time) * 100);
 		process_outputs();
 		++current_time;
 	}

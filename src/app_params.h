@@ -10,28 +10,36 @@ enum app_param_id {
 
 	/* Next read index */
 	PARAM_NEXT_READ = 0,
+	/* Stan zbiornika 1 */
+	PARAM_STAN_ZBIORNIKA_1 = 1,
+	/* Stan zbiornika 2 */
+	PARAM_STAN_ZBIORNIKA_2 = 2,
 	/* Minimalny czas pracy */
-	PARAM_MINIMALNY_CZAS_PRACY = 1,
+	PARAM_MINIMALNY_CZAS_PRACY = 3,
 	/* Proporcja rozpałki (czystego paliwa 1) */
-	PARAM_PROPORCJA_ROZPALKI = 2,
+	PARAM_PROPORCJA_ROZPALKI = 4,
 	/* Proporcja paliwa 1 */
-	PARAM_PROPORCJA_PALIWA_1 = 3,
+	PARAM_PROPORCJA_PALIWA_1 = 5,
 	/* Proporcja paliwa 2 */
-	PARAM_PROPORCJA_PALIWA_2 = 4,
+	PARAM_PROPORCJA_PALIWA_2 = 6,
+	/* Prędkość opróżniania zbiornika 1 */
+	PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_1 = 7,
+	/* Prędkość opróżniania zbiornika 2 */
+	PARAM_PREDKOSC_OPROZNIANIA_ZBIORNIKA_2 = 8,
 	/* Czas rozpalania (czystym paliwem 1) */
-	PARAM_CZAS_ROZPALANIA = 5,
+	PARAM_CZAS_ROZPALANIA = 9,
 	/* Czas wykrycia nasypu rozpałki */
-	PARAM_CZAS_WYKRYCIA_NASYPU_ROZPALKI = 6,
+	PARAM_CZAS_WYKRYCIA_NASYPU_ROZPALKI = 10,
 	/* Czas wykrycia wygaszenia */
-	PARAM_CZAS_WYKRYCIA_WYGASZENIA = 7,
+	PARAM_CZAS_WYKRYCIA_WYGASZENIA = 11,
 	/* Maksymalny czas przedłużenia sygnału */
-	PARAM_MAKSYMALNY_CZAS_PRZEDLUZENIA_SYGNALU = 8,
+	PARAM_MAKSYMALNY_CZAS_PRZEDLUZENIA_SYGNALU = 12,
 	/* Czas pracy pompy */
-	PARAM_CZAS_PRACY_POMPY = 9,
+	PARAM_CZAS_PRACY_POMPY = 13,
 	/* Wymuszona praca */
-	PARAM_WYMUSZONA_PRACA = 10,
+	PARAM_WYMUSZONA_PRACA = 14,
 	/* Podgląd stanu */
-	PARAM_PODGLAD_STANU = 11,
+	PARAM_PODGLAD_STANU = 15,
 
 	PARAM_COUNT
 };
