@@ -17,7 +17,7 @@
 		/* Inputs. */
 		loader-gpios = <&gpio1 7 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
 		sensor-gpios = <&gpio1 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
-		button-gpios = <&gpio0 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+		button-gpios = <&gpio1 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
 
 		/* LED1..LED4 on P0.13..P0.16 (active low) mirror Motor 1, Motor 2, Pump, Heater. */
 		led-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>,

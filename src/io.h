@@ -22,7 +22,7 @@ enum io_output {
 enum io_input {
 	IO_LOADER = 1U << 0, /* P1.07 */
 	IO_SENSOR = 1U << 1, /* P1.08 */
-	IO_BUTTON = 1U << 2, /* P0.11 */
+	IO_BUTTON = 1U << 2, /* P1.06 */
 
 	IO_INPUT_COUNT = 3
 };
