@@ -98,9 +98,9 @@ the GPIO table below). GPIO assignment is in
 | Motor 2 | output    | P1.02 | LED2 (P0.14)  |
 | Pump    | output    | P1.03 | LED3 (P0.15)  |
 | Heater  | output    | P1.04 | LED4 (P0.16)  |
-| Loader  | input, pull-up | P1.07 | -        |
-| Sensor  | input, pull-up | P1.08 | -        |
-| Button  | input, pull-up | P0.11 | -        |
+| Loader  | input, pull-up, active low | P1.07 | -        |
+| Sensor  | input, pull-up, active low | P1.08 | -        |
+| Button  | input, pull-up, active low | P0.11 | -        |
 
 ## Web client
 

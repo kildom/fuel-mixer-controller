@@ -5,7 +5,7 @@
  *
  * Available resources:
  *  - GPIO (io.h): io_set_output(IO_MOTOR_1/IO_MOTOR_2/IO_PUMP/IO_HEATER, on),
- *    io_get_input(IO_LOADER/IO_SENSOR/IO_BUTTON), io_get_output().
+ *    io_sample_input(), io_get_output().
  *  - Parameters (parameters.h, app_params.h): params_get()/params_set() by PARAM_* ID.
  */
 
@@ -124,6 +124,8 @@ static void stan(int stan_mask, bool on)
 
 static void start_procesowania(int aktualny_czas)
 {
+	uint32_t inputs_mask = io_sample_input();
+
 	now = aktualny_czas;
 	param_minimalny_czas_pracy = TIME_FROM_MIN(params_get(PARAM_MINIMALNY_CZAS_PRACY));
 	param_proporcja_rozpalki = params_get(PARAM_PROPORCJA_ROZPALKI);
@@ -134,9 +136,9 @@ static void start_procesowania(int aktualny_czas)
 	param_czas_wykrycia_wygaszenia = TIME_FROM_MIN(params_get(PARAM_CZAS_WYKRYCIA_WYGASZENIA));
 	param_maksymalny_czas_przedluzenia_sygnalu = TIME_FROM_SEC(params_get(PARAM_MAKSYMALNY_CZAS_PRZEDLUZENIA_SYGNALU));
 	param_czas_pracy_pompy = TIME_FROM_MIN(params_get(PARAM_CZAS_PRACY_POMPY));
-	input_sensor = io_get_input(IO_SENSOR);
-	input_podajnik = io_get_input(IO_LOADER);
-	input_button = io_get_input(IO_BUTTON);
+	input_sensor = (inputs_mask & IO_SENSOR) != 0;
+	input_podajnik = (inputs_mask & IO_LOADER) != 0;
+	input_button = (inputs_mask & IO_BUTTON) != 0;
 	stan(STAN_INPUT_SENSOR, input_sensor);
 	stan(STAN_INPUT_PODAJNIK, input_podajnik);
 	stan(STAN_INPUT_BUTTON, input_button);

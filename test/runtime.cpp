@@ -163,6 +163,20 @@ void process_outputs()
 	std::exit(EXIT_FAILURE);
 }
 
+std::size_t input_index(enum io_input input)
+{
+	switch (input) {
+	case IO_LOADER:
+		return 0;
+	case IO_SENSOR:
+		return 1;
+	case IO_BUTTON:
+		return 2;
+	default:
+		fail_from_c("invalid input ID");
+	}
+}
+
 } // namespace
 
 extern "C" int32_t params_get(uint8_t id)
@@ -181,12 +195,16 @@ extern "C" void params_set(uint8_t id, int32_t value)
 	parameter_values[id] = value;
 }
 
-extern "C" bool io_get_input(enum io_input input)
+extern "C" uint32_t io_sample_input(void)
 {
-	if (input < 0 || input >= IO_INPUT_COUNT) {
-		fail_from_c("invalid input ID");
+	uint32_t inputs_mask = 0;
+
+	for (std::size_t i = 0; i < input_values.size(); ++i) {
+		if (input_values[i]) {
+			inputs_mask |= 1U << i;
+		}
 	}
-	return input_values[input];
+	return inputs_mask;
 }
 
 extern "C" bool io_get_output(enum io_output output)
@@ -235,23 +253,21 @@ void force_work(int hours)
 
 void on(int input_id)
 {
-	if (input_id < 0 || input_id >= IO_INPUT_COUNT) {
-		throw std::out_of_range("invalid input ID");
-	}
-	if (!input_values[input_id]) {
-		input_values[input_id] = true;
-		write_scalar(input_id, true, current_time);
+	const std::size_t index = input_index(static_cast<enum io_input>(input_id));
+
+	if (!input_values[index]) {
+		input_values[index] = true;
+		write_scalar(static_cast<int>(index), true, current_time);
 	}
 }
 
 void off(int input_id)
 {
-	if (input_id < 0 || input_id >= IO_INPUT_COUNT) {
-		throw std::out_of_range("invalid input ID");
-	}
-	if (input_values[input_id]) {
-		input_values[input_id] = false;
-		write_scalar(input_id, false, current_time);
+	const std::size_t index = input_index(static_cast<enum io_input>(input_id));
+
+	if (input_values[index]) {
+		input_values[index] = false;
+		write_scalar(static_cast<int>(index), false, current_time);
 	}
 }
 

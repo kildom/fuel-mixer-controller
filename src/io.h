@@ -6,6 +6,7 @@
 #define IO_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /* Outputs; each one is mirrored to an LED (LED1..LED4). */
 enum io_output {
@@ -17,13 +18,13 @@ enum io_output {
 	IO_OUTPUT_COUNT
 };
 
-/* Inputs (with pull-up). */
+/* Active-low inputs (with pull-up); values are masks for io_sample_input(). */
 enum io_input {
-	IO_LOADER, /* P1.07 */
-	IO_SENSOR, /* P1.08 */
-	IO_BUTTON, /* P0.11 */
+	IO_LOADER = 1U << 0, /* P1.07 */
+	IO_SENSOR = 1U << 1, /* P1.08 */
+	IO_BUTTON = 1U << 2, /* P0.11 */
 
-	IO_INPUT_COUNT
+	IO_INPUT_COUNT = 3
 };
 
 /* Configure output, input and LED GPIOs. All outputs start off. */
@@ -35,8 +36,8 @@ int io_set_output(enum io_output output, bool on);
 /* Last state set by io_set_output(). */
 bool io_get_output(enum io_output output);
 
-/* Read the input: true if active (high), false otherwise or on error. */
-bool io_get_input(enum io_input input);
+/* Sample all inputs; a low level or falling edge since the last sample is active. */
+uint32_t io_sample_input(void);
 
 /* User-friendly names, e.g. "Motor 1"; "?" for an invalid ID. */
 const char *io_output_name(enum io_output output);
